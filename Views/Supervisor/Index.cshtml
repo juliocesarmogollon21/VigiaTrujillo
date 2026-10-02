@@ -1,0 +1,190 @@
+@model IReadOnlyList<VigiaTrujillo.Models.Incidencia>
+@{
+    ViewData["Title"] = "Bandeja de Supervisión";
+    var estados = (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Estados;
+    var obras = (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Obras;
+
+    int total = Model.Count;
+    int pendientes = Model.Count(i => i.Estado == "Pendiente de revisión");
+    int enRevision = Model.Count(i => i.Estado == "En revisión");
+    int infoSolicitada = Model.Count(i => i.Estado == "Información solicitada");
+    int enVerificacion = Model.Count(i => i.Estado == "En verificación");
+    int cerradas = Model.Count(i => i.Estado == "Resuelta" || i.Estado == "Derivada");
+    bool hayFiltros = !string.IsNullOrWhiteSpace(ViewBag.Estado) || ViewBag.ObraId != null
+                     || ViewBag.Desde != null || ViewBag.Hasta != null;
+}
+
+<div class="vt-page-header">
+    <span class="vt-eyebrow">Módulo de Supervisión</span>
+    <h1>Bandeja de Incidencias Ciudadanas</h1>
+    <p class="vt-subtitle">
+        Revisa, compara y emite resultados formales sobre los reportes ciudadanos.
+        Las nuevas incidencias se incorporan automáticamente.
+    </p>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-2">
+        <div class="vt-kpi vt-kpi--accent">
+            <div class="vt-kpi__label">Total</div>
+            <div class="vt-kpi__value">@total</div>
+            <div class="vt-kpi__meta">Incidencias registradas</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="vt-kpi vt-kpi--warning">
+            <div class="vt-kpi__label">Pendientes</div>
+            <div class="vt-kpi__value">@pendientes</div>
+            <div class="vt-kpi__meta">Pendientes de revisión</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="vt-kpi vt-kpi--accent">
+            <div class="vt-kpi__label">En revisión</div>
+            <div class="vt-kpi__value">@enRevision</div>
+            <div class="vt-kpi__meta">Con análisis en curso</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="vt-kpi vt-kpi--warning">
+            <div class="vt-kpi__label">Info. solicitada</div>
+            <div class="vt-kpi__value">@infoSolicitada</div>
+            <div class="vt-kpi__meta">A la espera del municipio</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="vt-kpi vt-kpi--accent">
+            <div class="vt-kpi__label">Verificación</div>
+            <div class="vt-kpi__value">@enVerificacion</div>
+            <div class="vt-kpi__meta">En contraste de evidencia</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="vt-kpi vt-kpi--success">
+            <div class="vt-kpi__label">Cerradas</div>
+            <div class="vt-kpi__value">@cerradas</div>
+            <div class="vt-kpi__meta">Resueltas o derivadas</div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Filtrar incidencias</div>
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label" for="filtroEstado">Estado</label>
+                <select name="estado" id="filtroEstado" class="form-select" asp-items="estados">
+                    <option value="">— Todos los estados —</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="filtroObra">Obra</label>
+                <select name="obraId" id="filtroObra" class="form-select" asp-items="obras">
+                    <option value="">— Todas las obras —</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="filtroDesde">Desde</label>
+                <input type="date" id="filtroDesde" name="desde" class="form-control" value="@ViewBag.Desde" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="filtroHasta">Hasta</label>
+                <input type="date" id="filtroHasta" name="hasta" class="form-control" value="@ViewBag.Hasta" />
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">Filtrar</button>
+                @if (hayFiltros)
+                {
+                    <a asp-action="Index" class="btn btn-outline-secondary" title="Limpiar filtros">Limpiar</a>
+                }
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table id="bandeja-incidencias" class="table mb-0" data-vigia-page="supervisor-bandeja">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Código</th>
+                    <th style="width: 25%;">Obra</th>
+                    <th style="width: 18%;">Estado</th>
+                    <th style="width: 12%;">Fecha</th>
+                    <th style="width: 10%;" class="text-center">Evidencias</th>
+                    <th style="width: 20%;" class="text-end">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="6">
+                        <div class="vt-empty">
+                            <h5 class="vt-empty__title">No hay incidencias para revisar</h5>
+                            <p class="vt-empty__text">
+                                No se encontraron incidencias con los filtros seleccionados,
+                                o aún no se han registrado reportes ciudadanos.
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+            }
+            else
+            {
+                foreach (var i in Model)
+                {
+                    var badgeClass = i.Estado switch
+                    {
+                        "Pendiente de revisión" => "vt-badge-warning",
+                        "En revisión" => "vt-badge-info",
+                        "Información solicitada" => "vt-badge-neutral",
+                        "En verificación" => "vt-badge-info",
+                        "Resuelta" => "vt-badge-success",
+                        "Derivada" => "vt-badge-danger",
+                        _ => "vt-badge-neutral"
+                    };
+
+                    <tr>
+                        <td>
+                            <span class="vt-code">@i.CodigoSeguimiento</span>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">@i.Obra?.Nombre</div>
+                            <small class="text-muted d-block text-truncate" style="max-width: 280px;" title="@i.Obra?.Ubicacion">
+                                @i.Obra?.Ubicacion
+                            </small>
+                        </td>
+                        <td>
+                            <span class="badge @badgeClass">@i.Estado</span>
+                        </td>
+                        <td>
+                            <div class="vt-figure">@i.FechaRegistro.ToString("dd/MM/yyyy")</div>
+                            <small class="text-muted vt-figure">@i.FechaRegistro.ToString("HH:mm")</small>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge vt-badge-neutral">@i.Evidencias.Count</span>
+                        </td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-primary" asp-action="Revisar" asp-route-id="@i.Id">Revisar</a>
+                        </td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<p class="text-muted small mt-3 mb-0">
+    Mostrando <strong>@total</strong> incidencia(s)
+    @if (hayFiltros)
+    {
+        <span>con los filtros aplicados.</span>
+    }
+    else
+    {
+        <span>registradas en el sistema.</span>
+    }
+</p>

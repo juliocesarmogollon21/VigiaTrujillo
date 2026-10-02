@@ -1,0 +1,103 @@
+@model VigiaTrujillo.Models.Obra
+@{
+    ViewData["Title"] = "Cambiar Estado de Obra";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="vt-page-header">
+            <span class="vt-eyebrow">Gestión de estados</span>
+            <h1>Actualizar estado de la obra</h1>
+            <p class="vt-subtitle">Seleccione el estado que refleja la situación actual del proyecto y registre el motivo del cambio.</p>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h6 mb-1">@Model.Nombre</h2>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="vt-label mb-0">Estado actual</span>
+                    <span class="badge vt-badge-neutral">@Model.Estado</span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(Model.MotivoCambioEstado))
+                {
+                    <div class="vt-kpi__meta mt-2">Último registro: "@Model.MotivoCambioEstado"</div>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form asp-action="CambiarEstado" asp-controller="Obras" method="post">
+                    <input type="hidden" name="id" value="@Model.Id" />
+
+                    <div class="mb-4">
+                        <label for="estadoSelect" class="form-label">Nuevo estado de la obra <span class="text-danger">*</span></label>
+                        <select id="estadoSelect" name="estado" class="form-select">
+                            @foreach (var estado in VigiaTrujillo.Models.Obra.EstadosDisponibles)
+                            {
+                                <option value="@estado" selected="@(estado == Model.Estado)">@estado</option>
+                            }
+                        </select>
+                        <div class="form-text">Seleccione el estado que refleja la situación actual del proyecto.</div>
+                    </div>
+
+                    <div id="paralizadaAlert" class="alert alert-warning d-none mb-3" role="alert">
+                        <strong>Atención:</strong> ha seleccionado "Paralizada". Es obligatorio registrar el motivo de esta decisión para fines de auditoría y transparencia.
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="motivo" class="form-label">
+                            Motivo del cambio
+                            <span id="motivoRequiredStar" class="text-danger d-none">*</span>
+                        </label>
+                        <textarea id="motivo" name="motivo" class="form-control" rows="3"
+                                  placeholder="Ej.: Retraso en entrega de materiales, conflicto social, revisión técnica pendiente..."></textarea>
+                        <div class="form-text">Detalle brevemente la razón del cambio de estado.</div>
+                    </div>
+
+                    <hr class="vt-divider" />
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-action="Details" asp-controller="Obras" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>Guardar cambio
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const estadoSelect = document.getElementById('estadoSelect');
+            const motivoInput = document.getElementById('motivo');
+            const paralizadaAlert = document.getElementById('paralizadaAlert');
+            const motivoRequiredStar = document.getElementById('motivoRequiredStar');
+
+            function validarEstado() {
+                const estadoSeleccionado = estadoSelect.value.trim().toLowerCase();
+
+                if (estadoSeleccionado === 'paralizada') {
+                    paralizadaAlert.classList.remove('d-none');
+                    motivoRequiredStar.classList.remove('d-none');
+                    motivoInput.setAttribute('required', 'required');
+                    motivoInput.classList.add('border-warning');
+                } else {
+                    paralizadaAlert.classList.add('d-none');
+                    motivoRequiredStar.classList.add('d-none');
+                    motivoInput.removeAttribute('required');
+                    motivoInput.classList.remove('border-warning');
+                }
+            }
+
+            validarEstado();
+
+            estadoSelect.addEventListener('change', validarEstado);
+        });
+    </script>
+}

@@ -1,0 +1,108 @@
+@model VigiaTrujillo.ViewModels.UsuarioFormViewModel
+@{
+    ViewData["Title"] = "Crear Usuario";
+}
+
+<div class="vt-page-header">
+    <span class="vt-eyebrow">Gestión de Usuarios</span>
+    <h1>Crear nuevo usuario</h1>
+    <p class="vt-subtitle">Registre un nuevo usuario del sistema y asígnele el rol correspondiente.</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4"></div>
+
+            <div class="card mb-4">
+                <div class="card-header">1. Información de la cuenta</div>
+                <div class="card-body">
+                    <p class="vt-subtitle mb-3">Datos básicos para el acceso al sistema.</p>
+
+                    <div class="mb-3">
+                        <label asp-for="NombreUsuario" class="form-label">
+                            Nombre de usuario <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="NombreUsuario" class="form-control" placeholder="Ej: juan.perez" />
+                        <div class="form-text">Debe ser único en el sistema. Se usará junto con la contraseña para iniciar sesión.</div>
+                        <span asp-validation-for="NombreUsuario" class="text-danger small d-block mt-1"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">2. Seguridad y contraseña</div>
+                <div class="card-body">
+                    <p class="vt-subtitle mb-3">Configure la contraseña inicial del usuario.</p>
+
+                    <div class="mb-3">
+                        <label asp-for="Contrasena" class="form-label">Contraseña inicial</label>
+                        <input asp-for="Contrasena" class="form-control" type="password" placeholder="Deje vacío para generar automáticamente" />
+                        <div class="form-text">Mínimo 6 caracteres. Si se deja vacío, el sistema generará una contraseña temporal.</div>
+                        <span asp-validation-for="Contrasena" class="text-danger small d-block mt-1"></span>
+                    </div>
+
+                    <div class="alert alert-info mb-0" role="alert">
+                        <div class="vt-label mb-1">Contraseña temporal automática</div>
+                        <p class="mb-0 small">
+                            Si no ingresa una contraseña, el sistema generará una temporal con el formato
+                            <span class="vt-code">Temp####</span> (ejemplo: <span class="vt-code">Temp4829!</span>).
+                            Esta contraseña se mostrará en el mensaje de confirmación para que pueda comunicarla al usuario.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">3. Rol y permisos del sistema</div>
+                <div class="card-body">
+                    <p class="vt-subtitle mb-3">Seleccione el nivel de acceso que tendrá el usuario.</p>
+
+                    <div class="mb-3">
+                        <label asp-for="Rol" class="form-label">Rol asignado <span class="text-danger">*</span></label>
+                        <select asp-for="Rol" asp-items="Model.Roles" class="form-select"></select>
+                        <span asp-validation-for="Rol" class="text-danger small d-block mt-1"></span>
+                    </div>
+
+                    <div class="vt-divider"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="vt-dl">
+                                <dt>Ciudadano</dt>
+                                <dd class="mb-0">Acceso básico al portal público de consulta de obras.</dd>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="vt-dl">
+                                <dt>Personal Municipal</dt>
+                                <dd class="mb-0">Gestiona obras, actualiza avances y sube evidencia.</dd>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="vt-dl">
+                                <dt>Supervisor</dt>
+                                <dd class="mb-0">Revisa incidencias ciudadanas y emite resultados formales.</dd>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="vt-dl">
+                                <dt>Administrador</dt>
+                                <dd class="mb-0">Gestión completa del sistema, incluyendo usuarios.</dd>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-end">
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Crear usuario</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

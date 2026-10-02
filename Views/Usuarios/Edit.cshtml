@@ -1,0 +1,162 @@
+@model VigiaTrujillo.ViewModels.UsuarioFormViewModel
+@{
+    ViewData["Title"] = "Editar Usuario";
+}
+
+<div class="vt-page-header">
+    <span class="vt-eyebrow">Gestión de Usuarios</span>
+    <h1>Editar usuario</h1>
+    <p class="vt-subtitle">Modifique los datos de la cuenta de <strong>@Model.NombreUsuario</strong>.</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <form asp-action="Edit" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4"></div>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="card mb-4">
+                <div class="card-header">1. Información de la cuenta</div>
+                <div class="card-body">
+                    <p class="vt-subtitle mb-3">Datos básicos de identificación del usuario.</p>
+
+                    <div class="mb-3">
+                        <label asp-for="NombreUsuario" class="form-label">
+                            Nombre de usuario <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="NombreUsuario" class="form-control" />
+                        <div class="form-text">Debe ser único en el sistema.</div>
+                        <span asp-validation-for="NombreUsuario" class="text-danger small d-block mt-1"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">2. Seguridad y contraseña</div>
+                <div class="card-body">
+                    <p class="vt-subtitle mb-3">Actualice la contraseña solo si es necesario.</p>
+
+                    <div class="mb-3">
+                        <label asp-for="Contrasena" class="form-label">Nueva contraseña</label>
+                        <input asp-for="Contrasena" class="form-control" type="password" placeholder="Deje vacío para conservar la actual" />
+                        <div class="form-text">Mínimo 6 caracteres. Si deja este campo vacío, la contraseña actual no se modificará.</div>
+                        <span asp-validation-for="Contrasena" class="text-danger small d-block mt-1"></span>
+                    </div>
+
+                    <div class="alert alert-warning mb-0" role="alert">
+                        <div class="vt-label mb-1">Precaución</div>
+                        <p class="mb-0 small">
+                            Si ingresa una nueva contraseña, la anterior será invalidada inmediatamente.
+                            Asegúrese de comunicar la nueva credencial al usuario.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">3. Rol y permisos del sistema</div>
+                <div class="card-body">
+                    <p class="vt-subtitle mb-3">Modifique el nivel de acceso del usuario.</p>
+
+                    <div class="mb-3">
+                        <label asp-for="Rol" class="form-label">Rol asignado <span class="text-danger">*</span></label>
+                        <select asp-for="Rol" asp-items="Model.Roles" class="form-select"></select>
+                        <span asp-validation-for="Rol" class="text-danger small d-block mt-1"></span>
+                    </div>
+
+                    <div class="vt-divider"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="vt-dl">
+                                <dt>Ciudadano</dt>
+                                <dd class="mb-0">Acceso básico al portal público de consulta de obras.</dd>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="vt-dl">
+                                <dt>Personal Municipal</dt>
+                                <dd class="mb-0">Gestiona obras, actualiza avances y sube evidencia.</dd>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="vt-dl">
+                                <dt>Supervisor</dt>
+                                <dd class="mb-0">Revisa incidencias ciudadanas y emite resultados formales.</dd>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="vt-dl">
+                                <dt>Administrador</dt>
+                                <dd class="mb-0">Gestión completa del sistema, incluyendo usuarios.</dd>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">4. Estado de la cuenta</div>
+                <div class="card-body">
+                    <p class="vt-subtitle mb-3">Active o desactive el acceso del usuario al sistema.</p>
+
+                    <div class="d-flex align-items-center gap-3 p-3" style="background-color: #f7f8fa; border: 1px solid #d9dee6; border-radius: 4px;">
+                        <div class="form-check form-switch mb-0">
+                            <input asp-for="Activo" id="toggleActivo" class="form-check-input" role="switch" />
+                        </div>
+                        <div>
+                            <span id="estadoTexto" class="badge @(Model.Activo ? "vt-badge-success" : "vt-badge-danger")">
+                                @(Model.Activo ? "Cuenta Activa" : "Cuenta Desactivada")
+                            </span>
+                            <div class="small text-muted mt-2" id="estadoDescripcion">
+                                @(Model.Activo
+                                    ? "El usuario puede iniciar sesión y acceder al sistema."
+                                    : "El usuario no podrá iniciar sesión hasta que se reactive su cuenta.")
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!Model.Activo)
+                    {
+                        <div class="alert alert-danger mt-3 mb-0" role="alert">
+                            <strong>Atención:</strong> Esta cuenta se encuentra actualmente desactivada.
+                            El usuario no puede iniciar sesión. Active la casilla para restaurar el acceso.
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-end">
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const toggle = document.getElementById('toggleActivo');
+            const texto = document.getElementById('estadoTexto');
+            const descripcion = document.getElementById('estadoDescripcion');
+
+            if (!toggle) {
+                return;
+            }
+
+            toggle.addEventListener('change', function () {
+                if (this.checked) {
+                    texto.textContent = 'Cuenta Activa';
+                    texto.className = 'badge vt-badge-success';
+                    descripcion.textContent = 'El usuario puede iniciar sesión y acceder al sistema.';
+                } else {
+                    texto.textContent = 'Cuenta Desactivada';
+                    texto.className = 'badge vt-badge-danger';
+                    descripcion.textContent = 'El usuario no podrá iniciar sesión hasta que se reactive su cuenta.';
+                }
+            });
+        });
+    </script>
+}

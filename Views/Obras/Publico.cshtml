@@ -1,0 +1,231 @@
+@model IEnumerable<VigiaTrujillo.Models.Obra>
+@{
+    ViewData["Title"] = "Obras Públicas";
+    int totalObras = Model.Count();
+    int enEjecucion = Model.Count(o => o.Estado == "En ejecución");
+    int concluidas = Model.Count(o => o.Estado == "Concluida");
+    decimal presupuestoTotal = Model.Sum(o => o.Presupuesto ?? 0);
+}
+
+<div class="vt-page-header">
+    <span class="vt-eyebrow">Transparencia en tiempo real</span>
+    <h1>Obras Públicas de Trujillo</h1>
+    <p class="vt-subtitle">
+        Consulta el avance, presupuesto y estado de los proyectos de infraestructura del distrito.
+        Ejerce tu derecho a la vigilancia ciudadana.
+    </p>
+    <div class="mt-3 d-flex flex-wrap gap-2">
+        <a asp-controller="Incidencias" asp-action="Registrar" class="btn btn-primary">
+            <i class="bi bi-megaphone me-1"></i>Reportar irregularidad
+        </a>
+        <a asp-action="Publico" class="btn btn-outline-secondary">Actualizar datos</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="vt-kpi vt-kpi--accent">
+            <div class="vt-kpi__label">Obras totales</div>
+            <div class="vt-kpi__value">@totalObras</div>
+            <div class="vt-kpi__meta">Registradas en el sistema</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="vt-kpi vt-kpi--success">
+            <div class="vt-kpi__label">En ejecución</div>
+            <div class="vt-kpi__value">@enEjecucion</div>
+            <div class="vt-kpi__meta">Con avance físico registrado</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="vt-kpi vt-kpi--accent">
+            <div class="vt-kpi__label">Concluidas</div>
+            <div class="vt-kpi__value">@concluidas</div>
+            <div class="vt-kpi__meta">Proyectos finalizados</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="vt-kpi vt-kpi--warning">
+            <div class="vt-kpi__label">Inversión total</div>
+            <div class="vt-kpi__value vt-figure">S/ @presupuestoTotal.ToString("N0")</div>
+            <div class="vt-kpi__meta">Presupuesto asignado</div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Filtrar obras</div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="filtroBusqueda">Búsqueda general</label>
+                <input type="text" id="filtroBusqueda" name="busqueda" class="form-control"
+                       placeholder="Nombre, CUI, ubicación..." value="@ViewBag.Busqueda" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="filtroEstado">Estado</label>
+                <select name="estado" id="filtroEstado" class="form-select">
+                    <option value="">Todos los estados</option>
+                    @foreach (var estado in ViewBag.Estados as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>())
+                    {
+                        <option value="@estado.Value" selected="@estado.Selected">@estado.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="filtroCategoria">Categoría</label>
+                <select name="categoria" id="filtroCategoria" class="form-select">
+                    <option value="">Todas las categorías</option>
+                    @foreach (var categoria in ViewBag.Categorias as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>())
+                    {
+                        <option value="@categoria.Value" selected="@categoria.Selected">@categoria.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="filtroZona">Zona</label>
+                <select name="zona" id="filtroZona" class="form-select">
+                    <option value="">Todas las zonas</option>
+                    @foreach (var z in ViewBag.Zonas as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>())
+                    {
+                        <option value="@z.Value" selected="@z.Selected">@z.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="filtroContratista">Contratista</label>
+                <select name="contratista" id="filtroContratista" class="form-select">
+                    <option value="">Todos los contratistas</option>
+                    @foreach (var c in ViewBag.Contratistas as IEnumerable<SelectListItem> ?? Enumerable.Empty<SelectListItem>())
+                    {
+                        <option value="@c.Value" selected="@c.Selected">@c.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-9 d-flex gap-2 align-items-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-funnel me-1"></i>Filtrar
+                </button>
+                <a asp-action="Publico" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i>Limpiar filtros
+                </a>
+            </div>
+        </form>
+
+        <hr class="vt-divider" />
+
+        @if (ViewBag.HayFiltros as bool? == true)
+        {
+            <p class="vt-subtitle mb-0">
+                Mostrando <strong>@totalObras</strong> de @ViewBag.TotalGeneral obra(s) registradas.
+            </p>
+        }
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card">
+        <div class="card-body">
+            <div class="vt-empty">
+                <i class="bi bi-inbox"></i>
+                <p class="vt-empty__title">No se encontraron obras</p>
+                <p class="vt-empty__text">
+                    @(string.IsNullOrWhiteSpace(ViewBag.Busqueda) && string.IsNullOrWhiteSpace(ViewBag.Estado)
+                        ? "Aún no hay obras registradas en el sistema."
+                        : "No hay resultados para los criterios de búsqueda seleccionados.")
+                </p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var obra in Model)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                            <span class="badge @(obra.Estado == "En ejecución" ? "vt-badge-success" :
+                                                 obra.Estado == "Concluida" ? "vt-badge-info" :
+                                                 obra.Estado == "Paralizada" ? "vt-badge-danger" :
+                                                 obra.Estado == "Con Sobrecosto" ? "vt-badge-warning" : "vt-badge-neutral")">
+                                @obra.Estado
+                            </span>
+                            @if (!string.IsNullOrWhiteSpace(obra.Zona))
+                            {
+                                <span class="vt-label mb-0">@obra.Zona</span>
+                            }
+                        </div>
+                        <h2 class="h6 mb-1 text-truncate" title="@obra.Nombre">@obra.Nombre</h2>
+                        <div class="vt-code">CUI @obra.Cui</div>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="vt-dl mb-3">
+                            <dt>Ubicación</dt>
+                            <dd>@obra.Ubicacion</dd>
+                            <dt>Presupuesto</dt>
+                            <dd class="vt-figure fw-semibold">S/ @(obra.Presupuesto?.ToString("N0") ?? "0")</dd>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="vt-label mb-0">Avance físico</span>
+                                <span class="vt-figure fw-semibold">@(obra.AvanceFisico?.ToString("N1") ?? "0")%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-info" role="progressbar"
+                                     style="width: @(obra.AvanceFisico ?? 0)%"
+                                     aria-valuenow="@(obra.AvanceFisico ?? 0)" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+
+                        @if (obra.FechaInicio.HasValue || obra.FechaFin.HasValue)
+                        {
+                            <div class="vt-kpi__meta mb-3">
+                                @(obra.FechaInicio?.ToString("dd/MM/yyyy") ?? "—") a @(obra.FechaFin?.ToString("dd/MM/yyyy") ?? "—")
+                            </div>
+                        }
+
+                        <a asp-action="DetallePublico" asp-route-id="@obra.Id" class="btn btn-outline-primary w-100">
+                            Ver detalle y evidencias
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <p class="vt-kpi__meta mt-3 mb-0">
+        Mostrando @totalObras obra(s)@(string.IsNullOrWhiteSpace(ViewBag.Busqueda) ? " registradas." : $" para '{ViewBag.Busqueda}'.")
+    </p>
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            if (typeof signalR !== "undefined") {
+                const connection = new signalR.HubConnectionBuilder()
+                    .withUrl("/hubs/vigia")
+                    .withAutomaticReconnect()
+                    .build();
+
+                connection.on("EstadoObraActualizado", function (data) {
+                    if (typeof showToast === "function") {
+                        showToast("Actualización en vivo", "Una obra ha sido actualizada. Recargando datos...", "info");
+                    }
+
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                });
+
+                connection.start().catch(err => console.error("SignalR connection error: ", err));
+            }
+        });
+    </script>
+}

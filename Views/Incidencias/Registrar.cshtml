@@ -1,0 +1,271 @@
+@model VigiaTrujillo.ViewModels.IncidenciaFormViewModel
+@{
+    ViewData["Title"] = "Registrar Incidencia";
+}
+
+<div class="vt-page-header">
+    <span class="vt-eyebrow">Control Ciudadano</span>
+    <h1>Reportar Irregularidad en Obra Pública</h1>
+    <p class="vt-subtitle">
+        Tu participaci&oacute;n es fundamental para garantizar la transparencia en la ejecuci&oacute;n de las obras p&uacute;blicas de Trujillo.
+        No necesitas iniciar sesi&oacute;n ni proporcionar datos personales: el reporte es 100% an&oacute;nimo y protegido.
+    </p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <form asp-action="Registrar" method="post" enctype="multipart/form-data" id="formIncidencia">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger d-block"></div>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <span class="vt-code" style="min-width: 1.75rem; text-align: center; font-size: 0.8125rem;">1</span>
+                        <div>
+                            <h2 class="mb-1">Selecciona la obra afectada <span class="text-danger">*</span></h2>
+                            <p class="text-muted small mb-0">
+                                Identifica el proyecto de infraestructura sobre el cual deseas reportar la irregularidad.
+                            </p>
+                        </div>
+                    </div>
+                    <label asp-for="ObraId" class="form-label">Obra p&uacute;blica</label>
+                    <select asp-for="ObraId" class="form-select" required>
+                        <option value="">-- Selecciona una obra del listado --</option>
+                        @foreach (var obra in Model.ObrasDisponibles)
+                        {
+                            <option value="@obra.Id">@obra.Nombre &mdash; @obra.Ubicacion</option>
+                        }
+                    </select>
+                    <span asp-validation-for="ObraId" class="text-danger small d-block mt-1"></span>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <span class="vt-code" style="min-width: 1.75rem; text-align: center; font-size: 0.8125rem;">2</span>
+                        <div>
+                            <h2 class="mb-1">Describe lo observado <span class="text-danger">*</span></h2>
+                            <p class="text-muted small mb-0">
+                                Proporciona el mayor detalle posible para facilitar la revisi&oacute;n del Supervisor de Transparencia.
+                            </p>
+                        </div>
+                    </div>
+                    <label asp-for="Descripcion" class="form-label">Descripci&oacute;n de lo observado</label>
+                    <textarea asp-for="Descripcion" id="descripcionInput" class="form-control" rows="6" required
+                              maxlength="1000"
+                              placeholder="Ejemplo: Maquinaria pesada detenida por m&aacute;s de 15 d&iacute;as sin personal trabajando en la obra. Tambi&eacute;n se observaron materiales de construcci&oacute;n abandonados a la intemperie."></textarea>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <span class="form-text mb-0">M&iacute;nimo 20 caracteres requeridos</span>
+                        <span id="charCounter" class="vt-badge-neutral">0 / 1000 caracteres</span>
+                    </div>
+                    <span asp-validation-for="Descripcion" class="text-danger small d-block mt-1"></span>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <span class="vt-code" style="min-width: 1.75rem; text-align: center; font-size: 0.8125rem;">3</span>
+                        <div>
+                            <h2 class="mb-1">
+                                Adjunta evidencia fotogr&aacute;fica
+                                <span class="vt-badge-info ms-1">Opcional</span>
+                            </h2>
+                            <p class="text-muted small mb-0">
+                                Las fotograf&iacute;as fortalecen tu reporte. Puedes adjuntar hasta 3 archivos
+                                (JPG, PNG o PDF, m&aacute;x. 5 MB cada uno).
+                            </p>
+                        </div>
+                    </div>
+
+                    <label for="archivosInput" id="dropZone" class="btn btn-outline-primary w-100 py-3 mb-2"
+                           style="border-style: dashed; cursor: pointer;">
+                        <span class="fw-semibold">Seleccionar archivos</span>
+                        <div class="small text-muted mt-1">o arrastra tus im&aacute;genes aqu&iacute; (m&aacute;x. 3 archivos)</div>
+                    </label>
+                    <input type="file" id="archivosInput" name="Archivos" class="d-none" multiple accept=".jpg,.jpeg,.png,.pdf" />
+
+                    <div id="fileWarnings"></div>
+                    <div id="previewContainer" class="d-flex gap-3 mt-3 flex-wrap"></div>
+
+                    <span asp-validation-for="Archivos" class="text-danger small d-block mt-2"></span>
+                </div>
+            </div>
+
+            <div class="alert alert-info mb-4" role="alert">
+                <h2 class="h6 fw-bold mb-1">Tu reporte est&aacute; protegido</h2>
+                <p class="small mb-0">
+                    Al enviar este formulario, el sistema generar&aacute; un <strong>c&oacute;digo de seguimiento &uacute;nico</strong>
+                    que podr&aacute;s usar para consultar el estado de tu reporte en cualquier momento. Tu identidad no ser&aacute;
+                    registrada ni compartida con el Personal Municipal ni con el contratista de la obra.
+                </p>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                <a asp-controller="Obras" asp-action="Publico" class="btn btn-outline-secondary px-4 order-2 order-md-1">
+                    Cancelar
+                </a>
+                <button type="submit" id="btnSubmit" class="btn btn-primary px-4 order-1 order-md-2">
+                    Enviar Reporte An&oacute;nimo
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const archivosInput = document.getElementById('archivosInput');
+            const dropZone = document.getElementById('dropZone');
+            const previewContainer = document.getElementById('previewContainer');
+            const fileWarnings = document.getElementById('fileWarnings');
+            const descripcionInput = document.getElementById('descripcionInput');
+            const charCounter = document.getElementById('charCounter');
+            const form = document.getElementById('formIncidencia');
+
+            let archivosValidos = [];
+            const MAX_ARCHIVOS = 3;
+            const MAX_TAMANO = 5 * 1024 * 1024;
+            const EXTENSIONES_PERMITIDAS = ['.jpg', '.jpeg', '.png', '.pdf'];
+
+            const CLASES_CONTADOR = ['vt-badge-neutral', 'vt-badge-warning', 'vt-badge-success'];
+
+            function actualizarContador() {
+                const longitud = descripcionInput.value.length;
+                charCounter.textContent = `${longitud} / 1000 caracteres`;
+                charCounter.classList.remove(...CLASES_CONTADOR);
+                if (longitud > 0 && longitud < 20) {
+                    charCounter.classList.add('vt-badge-warning');
+                } else if (longitud >= 20) {
+                    charCounter.classList.add('vt-badge-success');
+                } else {
+                    charCounter.classList.add('vt-badge-neutral');
+                }
+            }
+            descripcionInput.addEventListener('input', actualizarContador);
+            actualizarContador();
+
+            function renderPreviews() {
+                previewContainer.innerHTML = '';
+                archivosValidos.forEach((archivo, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'vt-evidence position-relative';
+                    div.style.width = '120px';
+                    div.title = archivo.name;
+
+                    if (archivo.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = ev => {
+                            const img = document.createElement('img');
+                            img.src = ev.target.result;
+                            img.alt = archivo.name;
+                            div.appendChild(img);
+                        };
+                        reader.readAsDataURL(archivo);
+                    } else {
+                        div.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted"><span class="vt-badge-danger">PDF</span></div>';
+                    }
+
+                    const btnEliminar = document.createElement('button');
+                    btnEliminar.type = 'button';
+                    btnEliminar.className = 'btn btn-sm btn-danger position-absolute top-0 end-0 m-1';
+                    btnEliminar.textContent = 'X';
+                    btnEliminar.title = 'Eliminar';
+                    btnEliminar.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        archivosValidos.splice(index, 1);
+                        renderPreviews();
+                        actualizarDataTransfer();
+                    });
+                    div.appendChild(btnEliminar);
+                    previewContainer.appendChild(div);
+                });
+            }
+
+            function actualizarDataTransfer() {
+                const dt = new DataTransfer();
+                archivosValidos.forEach(file => dt.items.add(file));
+                archivosInput.files = dt.files;
+            }
+
+            function mostrarAdvertencia(mensaje) {
+                const div = document.createElement('div');
+                div.className = 'alert alert-warning py-2 small mt-2';
+                div.textContent = mensaje;
+                fileWarnings.appendChild(div);
+                setTimeout(() => div.remove(), 6000);
+            }
+
+            function procesarArchivos(nuevosArchivos) {
+                fileWarnings.innerHTML = '';
+                if (archivosValidos.length + nuevosArchivos.length > MAX_ARCHIVOS) {
+                    mostrarAdvertencia(`Solo puedes adjuntar hasta ${MAX_ARCHIVOS} archivos. Se ignorarán los excedentes.`);
+                }
+
+                nuevosArchivos.forEach(archivo => {
+                    if (archivosValidos.length >= MAX_ARCHIVOS) return;
+
+                    const extension = '.' + archivo.name.split('.').pop().toLowerCase();
+                    if (!EXTENSIONES_PERMITIDAS.includes(extension)) {
+                        mostrarAdvertencia(`El archivo "${archivo.name}" tiene un formato no permitido.`);
+                        return;
+                    }
+
+                    if (archivo.size > MAX_TAMANO) {
+                        mostrarAdvertencia(`El archivo "${archivo.name}" excede el tamaño máximo de 5 MB.`);
+                        return;
+                    }
+
+                    archivosValidos.push(archivo);
+                });
+
+                renderPreviews();
+                actualizarDataTransfer();
+            }
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            const CLASES_ZONA = ['border-primary', 'bg-light'];
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add(...CLASES_ZONA), false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove(...CLASES_ZONA), false);
+            });
+
+            dropZone.addEventListener('drop', function(e) {
+                const dt = e.dataTransfer;
+                const nuevosArchivos = Array.from(dt.files);
+                procesarArchivos(nuevosArchivos);
+            }, false);
+
+            archivosInput.addEventListener('change', function (e) {
+                const nuevosArchivos = Array.from(e.target.files);
+                procesarArchivos(nuevosArchivos);
+            });
+
+            form.addEventListener('submit', function (e) {
+                const descripcion = descripcionInput.value.trim();
+                if (descripcion.length < 20) {
+                    e.preventDefault();
+                    mostrarAdvertencia('La descripción debe tener al menos 20 caracteres.');
+                    descripcionInput.focus();
+                    return false;
+                }
+            });
+        });
+    </script>
+}

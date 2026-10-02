@@ -1,0 +1,363 @@
+@model VigiaTrujillo.ViewModels.SupervisorRevisarViewModel
+@{
+    ViewData["Title"] = "Revisar Incidencia";
+    var i = Model.Incidencia;
+    var permitidos = (ViewBag.EstadosPermitidos as IReadOnlyList<string>) ?? Array.Empty<string>();
+    var cerrada = ViewBag.IncidenciaCerrada as bool? == true;
+
+    var estadoBadge = i.Estado switch
+    {
+        "Pendiente de revisión" => "vt-badge-warning",
+        "En revisión" => "vt-badge-info",
+        "Información solicitada" => "vt-badge-neutral",
+        "En verificación" => "vt-badge-info",
+        "Resuelta" => "vt-badge-success",
+        "Derivada" => "vt-badge-danger",
+        _ => "vt-badge-neutral"
+    };
+}
+
+<div class="vt-page-header">
+    <span class="vt-eyebrow">Revisión de incidencia</span>
+    <h1>
+        Incidencia <span class="vt-code">@i.CodigoSeguimiento</span>
+    </h1>
+    <p class="vt-subtitle">
+        Registrada el @i.FechaRegistro.ToString("dd 'de' MMMM 'de' yyyy 'a las' HH:mm")
+        <span class="d-inline-block ms-2">
+            <span class="badge @estadoBadge">@i.Estado</span>
+            @if (cerrada)
+            {
+                <span class="badge vt-badge-danger ms-1">Cerrada</span>
+            }
+        </span>
+    </p>
+</div>
+
+@if (cerrada)
+{
+    <div class="alert alert-danger mb-4" role="alert">
+        <h5 class="mb-1">Esta incidencia ha sido cerrada</h5>
+        <p class="mb-0">No se permiten más cambios de estado ni nuevas observaciones.</p>
+        @if (!string.IsNullOrWhiteSpace(i.ResultadoRevision))
+        {
+            <hr class="vt-divider" />
+            <div class="vt-label">Resultado final emitido</div>
+            <p class="mb-0" style="white-space: pre-wrap;">@i.ResultadoRevision</p>
+        }
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-7">
+
+        <div class="card mb-4">
+            <div class="card-header">Comparación de información</div>
+            <div class="card-body">
+                <p class="vt-subtitle mb-3">Contraste entre los datos oficiales de la obra y la evidencia ciudadana.</p>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header vt-badge-info">Información oficial</div>
+                            <div class="card-body">
+                                @if (i.Obra != null)
+                                {
+                                    <dl class="vt-dl">
+                                        <dt>Nombre de la obra</dt>
+                                        <dd>@i.Obra.Nombre</dd>
+
+                                        <dt>CUI</dt>
+                                        <dd><span class="vt-code">@i.Obra.Cui</span></dd>
+
+                                        <dt>Ubicación</dt>
+                                        <dd>@i.Obra.Ubicacion</dd>
+
+                                        <dt>Estado actual</dt>
+                                        <dd><span class="badge vt-badge-neutral">@i.Obra.Estado</span></dd>
+
+                                        <dt>Avance físico oficial</dt>
+                                        <dd class="vt-figure fw-semibold">@((i.Obra.AvanceFisico ?? 0).ToString("0.##"))%</dd>
+
+                                        <dt>Presupuesto</dt>
+                                        <dd class="vt-figure">S/ @((i.Obra.Presupuesto ?? 0).ToString("N2"))</dd>
+
+                                        <dt>Contratista</dt>
+                                        <dd class="mb-0">@(i.Obra.Contratista ?? "—")</dd>
+                                    </dl>
+                                }
+                                else
+                                {
+                                    <div class="vt-empty">
+                                        <h6 class="vt-empty__title">Sin datos de obra</h6>
+                                        <p class="vt-empty__text">La incidencia no está asociada a una obra registrada.</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header vt-badge-warning">Reporte ciudadano</div>
+                            <div class="card-body">
+                                <dl class="vt-dl">
+                                    <dt>Descripción</dt>
+                                    <dd style="white-space: pre-wrap;">@i.Descripcion</dd>
+
+                                    <dt>Evidencias</dt>
+                                    <dd><span class="badge vt-badge-warning">@i.Evidencias.Count archivo(s)</span></dd>
+
+                                    <dt>Fecha del reporte</dt>
+                                    <dd class="vt-figure mb-0">@i.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Historial de observaciones · @i.Observaciones.Count registro(s)</div>
+            <div class="card-body">
+                @if (i.Observaciones.Any())
+                {
+                    <ul class="vt-timeline mb-4">
+                        @foreach (var o in i.Observaciones.OrderByDescending(x => x.Fecha))
+                        {
+                            var partes = o.Texto.Split(new[] { "\n\n📎 Archivo adjunto: " }, StringSplitOptions.None);
+                            var textoPrincipal = partes[0];
+                            var tieneArchivo = partes.Length > 1;
+                            string nombreArchivo = "", rutaArchivo = "";
+
+                            if (tieneArchivo)
+                            {
+                                var info = partes[1].Split(new[] { " (" }, StringSplitOptions.None);
+                                nombreArchivo = info[0];
+                                rutaArchivo = info.Length > 1 ? info[1].TrimEnd(')') : "";
+                            }
+
+                            <li class="vt-timeline__item">
+                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                    <span class="badge @(o.Autor.Contains("Municipal") ? "vt-badge-warning" : "vt-badge-info")">@o.Autor</span>
+                                    <small class="text-muted vt-figure">@o.Fecha.ToString("dd/MM/yyyy HH:mm")</small>
+                                </div>
+                                <div class="p-3" style="background-color: #f7f8fa; border: 1px solid #d9dee6; border-radius: 4px;">
+                                    <p class="mb-0" style="white-space: pre-wrap;">@textoPrincipal</p>
+                                    @if (tieneArchivo && !string.IsNullOrEmpty(rutaArchivo))
+                                    {
+                                        <hr class="vt-divider" />
+                                        <a href="@rutaArchivo" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            Descargar: @nombreArchivo
+                                        </a>
+                                    }
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <div class="vt-empty">
+                        <h6 class="vt-empty__title">Sin observaciones registradas</h6>
+                        <p class="vt-empty__text">Todavía no se han registrado observaciones a esta incidencia.</p>
+                    </div>
+                }
+
+                @if (!cerrada)
+                {
+                    <hr class="vt-divider" />
+                    <form asp-action="AgregarObservacion" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@i.Id" />
+                        <div class="vt-label mb-2">Agregar nueva observación</div>
+                        <textarea name="texto" class="form-control mb-2" rows="3" required minlength="5"
+                                  placeholder="Describa sus hallazgos, análisis de la evidencia o motivos de su decisión..."></textarea>
+                        <div class="form-text mb-3">Mínimo 5 caracteres. Esta observación quedará registrada permanentemente.</div>
+                        <button type="submit" class="btn btn-primary">Guardar en el historial</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+
+        <div class="card mb-4">
+            <div class="card-header">Evidencias del ciudadano</div>
+            <div class="card-body">
+                @if (i.Evidencias.Any())
+                {
+                    <div class="row g-3">
+                        @foreach (var ev in i.Evidencias)
+                        {
+                            var esImagen = ev.RutaArchivo.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                                           ev.RutaArchivo.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                                           ev.RutaArchivo.EndsWith(".png", StringComparison.OrdinalIgnoreCase);
+                            <div class="col-6 col-md-4">
+                                <div class="vt-evidence">
+                                    @if (esImagen)
+                                    {
+                                        <a href="@ev.RutaArchivo" target="_blank">
+                                            <img src="@ev.RutaArchivo" alt="@ev.NombreArchivo" loading="lazy" />
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a href="@ev.RutaArchivo" target="_blank" class="d-flex flex-column align-items-center justify-content-center h-100 p-2 text-decoration-none">
+                                            <span class="badge vt-badge-danger">Documento</span>
+                                            <small class="text-truncate w-100 text-center mt-2">@ev.NombreArchivo</small>
+                                        </a>
+                                    }
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center gap-1 mt-1">
+                                    <small class="text-truncate" title="@ev.NombreArchivo">@ev.NombreArchivo</small>
+                                    @if (!cerrada)
+                                    {
+                                        <form asp-action="EliminarEvidencia" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@i.Id" />
+                                            <input type="hidden" name="evidenciaId" value="@ev.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                    title="Eliminar evidencia"
+                                                    onclick="return confirm('¿Eliminar esta evidencia del detalle?');">
+                                                Eliminar
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="vt-empty">
+                        <h6 class="vt-empty__title">Sin evidencias adjuntas</h6>
+                        <p class="vt-empty__text">El ciudadano no adjuntó archivos a este reporte.</p>
+                    </div>
+                }
+
+                @if (!cerrada)
+                {
+                    <hr class="vt-divider" />
+                    <form asp-action="AgregarEvidencia" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@i.Id" />
+                        <label class="form-label" for="archivoEvidencia">Agregar evidencia al detalle</label>
+                        <input type="file" id="archivoEvidencia" name="archivo" class="form-control mb-2" required
+                               accept=".jpg,.jpeg,.png,.pdf" />
+                        <div class="form-text mb-3">Formatos: JPG, PNG, PDF. Máximo 5 MB por archivo.</div>
+                        <button type="submit" class="btn btn-outline-primary btn-sm">Subir evidencia</button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        @if (!cerrada)
+        {
+            <div class="card mb-4">
+                <div class="card-header">Solicitar información adicional</div>
+                <div class="card-body">
+                    <p class="vt-subtitle mb-3">Dirigida al Personal Municipal responsable de la obra.</p>
+                    <form asp-action="SolicitarInformacion" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@i.Id" />
+                        <label class="form-label" for="notaInformacion">
+                            ¿Qué información o documentación requiere? <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="nota" id="notaInformacion" class="form-control mb-2" rows="3" required
+                                  placeholder="Ej. Se requiere: 1) Reporte de avance físico actualizado, 2) Acta de entrega parcial..."></textarea>
+                        <div class="form-text mb-3">
+                            La incidencia pasará al estado «Información solicitada» y el Personal Municipal será notificado.
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100">Solicitar información</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">Gestión de estado y cierre</div>
+                <div class="card-body">
+                    <form asp-action="CambiarEstado" method="post" id="formCambiarEstado">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@i.Id" />
+
+                        <label class="form-label" for="selectNuevoEstado">
+                            Cambiar a nuevo estado <span class="text-danger">*</span>
+                        </label>
+                        <select name="nuevoEstado" id="selectNuevoEstado" class="form-select mb-3" required onchange="ajustarFormularioCierre()">
+                            <option value="@i.Estado" disabled selected>@i.Estado</option>
+
+                            @foreach (var e in permitidos)
+                            {
+                                <option value="@e" data-es-final="@(e == "Resuelta" || e == "Derivada" ? "true" : "false")">@e</option>
+                            }
+                        </select>
+
+                        @if (!permitidos.Any())
+                        {
+                            <div class="alert alert-warning mb-2">
+                                No hay transiciones disponibles desde el estado actual.
+                            </div>
+                        }
+
+                        <label class="form-label" id="labelResultado">Motivo / Sustento (opcional)</label>
+                        <textarea name="resultadoRevision" id="textoResultado" class="form-control mb-3" rows="3"
+                                  placeholder="Comentarios sobre el cambio de estado..."></textarea>
+
+                        <button type="submit" class="btn btn-primary w-100" id="btnAplicarEstado" @(permitidos.Any() ? null : "disabled")>
+                            Aplicar cambio de estado
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <a asp-action="Index" class="btn btn-outline-secondary w-100">Volver a bandeja de incidencias</a>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function ajustarFormularioCierre() {
+        const select = document.getElementById('selectNuevoEstado');
+        const optionSeleccionada = select.options[select.selectedIndex];
+        const label = document.getElementById('labelResultado');
+        const textarea = document.getElementById('textoResultado');
+        const btn = document.getElementById('btnAplicarEstado');
+
+        if (!optionSeleccionada || optionSeleccionada.value === "" || optionSeleccionada.disabled) {
+            label.textContent = "Motivo / Sustento (opcional)";
+            textarea.required = false;
+            textarea.placeholder = "Comentarios sobre el cambio de estado...";
+            btn.textContent = "Aplicar cambio de estado";
+            btn.className = "btn btn-primary w-100";
+            return;
+        }
+
+        const estado = optionSeleccionada.value;
+
+        if (estado === "Información solicitada") {
+            label.textContent = "Motivo de la solicitud *";
+            textarea.required = true;
+            textarea.placeholder = "Especifique qué información o documento falta...";
+            btn.textContent = "Solicitar información";
+            btn.className = "btn btn-warning w-100";
+        }
+        else if (estado === "Resuelta" || estado === "Derivada") {
+            label.textContent = "Sustento documental del resultado final *";
+            textarea.required = true;
+            textarea.placeholder = "Detalle el resultado de su análisis y conclusiones finales...";
+            btn.textContent = "Emitir resultado y cerrar";
+            btn.className = "btn btn-danger w-100";
+        }
+        else {
+            label.textContent = "Motivo / Sustento (opcional)";
+            textarea.required = false;
+            textarea.placeholder = "Comentarios sobre el cambio de estado...";
+            btn.textContent = "Aplicar cambio de estado";
+            btn.className = "btn btn-primary w-100";
+        }
+    }
+</script>
+}

@@ -1,0 +1,135 @@
+@model VigiaTrujillo.ViewModels.ObraFormViewModel
+@{
+    ViewData["Title"] = "Registrar Nueva Obra";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="vt-page-header">
+            <span class="vt-eyebrow">Registro de obra</span>
+            <h1>Registrar nueva obra pública</h1>
+            <p class="vt-subtitle">Complete los datos generales, el plazo de ejecución y la información financiera del proyecto.</p>
+        </div>
+
+        <div class="alert alert-info mb-4" role="alert">
+            <strong>Información importante:</strong> al crear una nueva obra, el estado inicial se fijará automáticamente en
+            <span class="badge vt-badge-neutral">Programada</span>.
+            Podrá actualizarlo posteriormente desde el detalle de la obra una vez que inicie la ejecución.
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form asp-action="Create" method="post" novalidate>
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger small"></div>
+                    <input type="hidden" asp-for="Estado" value="Programada" />
+
+                    <h2 class="h6 mb-3 pb-2 border-bottom">Información general</h2>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-8">
+                            <label asp-for="Nombre" class="form-label">
+                                Nombre / Componente <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Nombre" class="form-control" placeholder="Ej.: Mejoramiento del Parque Alambre" />
+                            <span asp-validation-for="Nombre" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Cui" class="form-label">
+                                CUI <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Cui" class="form-control" placeholder="Código Único de Inversión" />
+                            <div class="form-text">Código oficial del proyecto de inversión.</div>
+                            <span asp-validation-for="Cui" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Ubicacion" class="form-label">
+                                Ubicación <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Ubicacion" class="form-control" placeholder="Dirección o referencia geográfica exacta" />
+                            <span asp-validation-for="Ubicacion" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Contratista" class="form-label">Contratista</label>
+                            <input asp-for="Contratista" class="form-control" placeholder="Nombre de la empresa ejecutora" />
+                            <span asp-validation-for="Contratista" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <h2 class="h6 mb-3 pb-2 border-bottom">Plazo de ejecución</h2>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="FechaInicio" class="form-label">
+                                Fecha de inicio <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="FechaInicio" class="form-control" type="date" />
+                            <span asp-validation-for="FechaInicio" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="FechaFin" class="form-label">
+                                Fecha de fin <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="FechaFin" class="form-control" type="date" />
+                            <div class="form-text">Debe ser igual o posterior a la fecha de inicio.</div>
+                            <span asp-validation-for="FechaFin" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <h2 class="h6 mb-3 pb-2 border-bottom">Datos financieros</h2>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label asp-for="Presupuesto" class="form-label">
+                                Presupuesto (S/) <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">S/</span>
+                                <input asp-for="Presupuesto" class="form-control" type="number" min="1" step="0.01" inputmode="decimal" placeholder="0.00" />
+                            </div>
+                            <div class="form-text">Monto adjudicado oficial.</div>
+                            <span asp-validation-for="Presupuesto" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="AvanceFisico" class="form-label">Avance físico (%)</label>
+                            <div class="input-group">
+                                <input asp-for="AvanceFisico" class="form-control" type="number" min="0" max="100" step="0.01" inputmode="decimal" placeholder="0" />
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="form-text">Porcentaje de ejecución verificado.</div>
+                            <span asp-validation-for="AvanceFisico" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="estadoInicialReadonly">Estado inicial</label>
+                            <input class="form-control" id="estadoInicialReadonly" value="Programada" readonly tabindex="-1" />
+                            <div class="form-text">Se asigna automáticamente.</div>
+                        </div>
+                    </div>
+
+                    <h2 class="h6 mb-3 pb-2 border-bottom">Clasificación</h2>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="Zona" class="form-label">Zona</label>
+                            <input asp-for="Zona" class="form-control" placeholder="Ej.: Centro, La Merced, Florencia de Mora" />
+                            <span asp-validation-for="Zona" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Categoria" class="form-label">Categoría</label>
+                            <input asp-for="Categoria" class="form-control" placeholder="Ej.: Vial, Saneamiento, Educativo" />
+                            <span asp-validation-for="Categoria" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <hr class="vt-divider" />
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>Registrar obra
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

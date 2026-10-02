@@ -1,0 +1,154 @@
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<section class="vt-home">
+    <div class="vt-home__overlay"></div>
+
+    <div class="container position-relative py-5">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-9">
+
+                <div class="vt-home__escudo-marco mb-3">
+                    <img src="~/img/escudo-trujillo.png"
+                         alt="Escudo de la Municipalidad Distrital de Trujillo"
+                         class="vt-home__escudo">
+                </div>
+
+                <div class="mb-3">
+                    <span class="vt-home__badge">Plataforma Oficial de Transparencia</span>
+                </div>
+
+                <h1 class="vt-home__titulo mb-2">Vigía Trujillo</h1>
+                <p class="vt-home__subtitulo lead mb-3">Transparencia y Control Ciudadano en Tiempo Real</p>
+                <p class="vt-home__texto mb-4">
+                    Información centralizada de las obras públicas, reporte anónimo con evidencia
+                    y rendición de cuentas verificable.
+                </p>
+
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    <a asp-controller="Obras" asp-action="Publico" class="btn vt-home__btn">
+                        Consultar Obras Públicas
+                    </a>
+                    <a asp-controller="Incidencias" asp-action="Registrar" class="btn vt-home__btn">
+                        Reportar Irregularidad
+                    </a>
+                    <a asp-controller="Incidencias" asp-action="Consultar" class="btn vt-home__btn">
+                        Consultar mi Reporte
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="vt-home-strip">
+    <div class="container py-4">
+        <div class="row g-3">
+            <div class="col-md-4 col-sm-6">
+                <div class="vt-kpi vt-kpi--accent">
+                    <div class="vt-kpi__label">Trazabilidad</div>
+                    <div class="vt-kpi__value">100%</div>
+                    <div class="vt-kpi__meta">Cada reporte con seguimiento verificable</div>
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-6">
+                <div class="vt-kpi vt-kpi--success">
+                    <div class="vt-kpi__label">Disponibilidad</div>
+                    <div class="vt-kpi__value">24/7</div>
+                    <div class="vt-kpi__meta">Acceso sin trámites ni burocracia</div>
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-6">
+                <div class="vt-kpi vt-kpi--warning">
+                    <div class="vt-kpi__label">Protección</div>
+                    <div class="vt-kpi__value">Anónimo</div>
+                    <div class="vt-kpi__meta">Sin identificación del ciudadano</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="pilares" class="bg-white border-bottom">
+    <div class="container py-5">
+        <div class="vt-section-head mb-4">
+            <span class="vt-label">Nuestra Misión</span>
+            <h2 class="mb-1">Pilares de la Plataforma</h2>
+            <p class="text-muted mb-0">Control social con tecnología sobre la gestión de obras públicas.</p>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="vt-pilar h-100">
+                    <span class="vt-pilar__num">01</span>
+                    <h3 class="vt-pilar__titulo">Datos Centralizados</h3>
+                    <p class="vt-pilar__texto mb-0">
+                        Presupuestos, contratistas, fechas y avances físicos en un solo lugar.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="vt-pilar h-100">
+                    <span class="vt-pilar__num">02</span>
+                    <h3 class="vt-pilar__titulo">Vigilancia Activa</h3>
+                    <p class="vt-pilar__texto mb-0">
+                        Canal anónimo para reportar irregularidades con evidencia fotográfica.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="vt-pilar h-100">
+                    <span class="vt-pilar__num">03</span>
+                    <h3 class="vt-pilar__titulo">Fiscalización con Sustento</h3>
+                    <p class="vt-pilar__texto mb-0">
+                        El Supervisor contrasta datos oficiales con evidencia ciudadana y emite resultados formales.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="bg-white border-bottom">
+    <div class="container py-5">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-7">
+                <span class="vt-badge-success mb-3 d-inline-block">Agenda 2030 ONU</span>
+                <h2 class="mb-2">Comprometidos con el ODS 11 y el ODS 16</h2>
+                <p class="text-muted mb-0">
+                    Una herramienta operativa contra la corrupción, no solo un portal de consultas.
+                </p>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-sm-6">
+                        <div class="vt-ods">
+                            <div class="vt-ods__label">ODS 11</div>
+                            <p class="vt-ods__texto mb-0">Ciudades sostenibles y acceso inclusivo a la información urbana.</p>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="vt-ods">
+                            <div class="vt-ods__label">ODS 16</div>
+                            <p class="vt-ods__texto mb-0">Instituciones transparentes que rinden cuentas a la ciudadanía.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="vt-alcance">
+                    <div class="vt-alcance__titulo">Alcance del Portal</div>
+                    <dl class="vt-dl mb-0 mt-3">
+                        <dt>Cobertura</dt>
+                        <dd>Obras públicas en ejecución del distrito de Trujillo</dd>
+                        <dt>Participación</dt>
+                        <dd>Reporte anónimo con evidencia fotográfica</dd>
+                        <dt>Resultado</dt>
+                        <dd>Resolución formal y publicable de cada caso</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,43 @@
+@model VigiaTrujillo.ViewModels.ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card">
+                <div class="card-body">
+                    <div class="vt-empty">
+                        <span class="vt-badge-danger">Error del sistema</span>
+                        <h1 class="vt-empty__title">Ocurrió un problema inesperado</h1>
+                        <p class="vt-empty__text mb-0">
+                            No pudimos completar la operación solicitada. Nuestro equipo ha registrado el incidente.
+                            Por favor, intenta de nuevo o vuelve a la página principal.
+                        </p>
+                    </div>
+
+                    @if (Model?.ShowRequestId == true)
+                    {
+                        <hr class="vt-divider" />
+                        <dl class="vt-dl mb-0 text-center">
+                            <dt>Código de referencia para soporte</dt>
+                            <dd><span class="vt-code">@Model.RequestId</span></dd>
+                        </dl>
+                    }
+
+                    <hr class="vt-divider" />
+
+                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-primary px-4">
+                            Volver al inicio
+                        </a>
+                        <a href="javascript:history.back()" class="btn btn-outline-secondary px-4">
+                            Regresar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,251 @@
+@{
+    ViewData["Title"] = "Panel Administrativo";
+
+    int total = ViewBag.Total ?? 0;
+    int programadas = ViewBag.Programadas ?? 0;
+    int enEjecucion = ViewBag.EnEjecucion ?? 0;
+    int concluidas = ViewBag.Concluidas ?? 0;
+    int paralizadas = ViewBag.Paralizadas ?? 0;
+    int sobrecosto = ViewBag.Sobrecosto ?? 0;
+    int solicitudesPendientes = ViewBag.SolicitudesPendientes ?? 0;
+
+    decimal porcentajeEjecucion = total > 0 ? Math.Round((decimal)enEjecucion / total * 100, 1) : 0;
+    decimal porcentajeParalizadas = total > 0 ? Math.Round((decimal)paralizadas / total * 100, 1) : 0;
+    decimal porcentajeConcluidas = total > 0 ? Math.Round((decimal)concluidas / total * 100, 1) : 0;
+
+    var categorias = ViewBag.Categorias as List<string> ?? new List<string> { "Vial", "Saneamiento", "Educativo", "Salud" };
+    var presupuestos = ViewBag.Presupuestos as List<decimal> ?? new List<decimal> { 450000, 320000, 280000, 190000 };
+}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<div class="vt-page-header">
+    <span class="vt-eyebrow">Panel de control</span>
+    <h1>Panel Administrativo</h1>
+    <p class="vt-subtitle">
+        Bienvenido, <strong>@User.Identity?.Name</strong>. Resumen ejecutivo del estado de las obras públicas del distrito.
+    </p>
+    <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
+        <span class="vt-label mb-0">Obras registradas en total</span>
+        <span class="vt-figure fs-5 fw-semibold">@total</span>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6 col-lg-2">
+        <div class="vt-kpi vt-kpi--accent">
+            <div class="vt-kpi__label">Total obras</div>
+            <div class="vt-kpi__value">@total</div>
+            <div class="vt-kpi__meta">Registro completo</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-2">
+        <div class="vt-kpi vt-kpi--accent">
+            <div class="vt-kpi__label">Programadas</div>
+            <div class="vt-kpi__value">@programadas</div>
+            <div class="vt-kpi__meta">Pendientes de inicio</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-2">
+        <div class="vt-kpi vt-kpi--success">
+            <div class="vt-kpi__label">En ejecución</div>
+            <div class="vt-kpi__value">@enEjecucion</div>
+            <div class="vt-kpi__meta">@porcentajeEjecucion% del total</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-2">
+        <div class="vt-kpi vt-kpi--accent">
+            <div class="vt-kpi__label">Concluidas</div>
+            <div class="vt-kpi__value">@concluidas</div>
+            <div class="vt-kpi__meta">@porcentajeConcluidas% completadas</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-2">
+        <div class="vt-kpi vt-kpi--danger">
+            <div class="vt-kpi__label">Paralizadas</div>
+            <div class="vt-kpi__value">@paralizadas</div>
+            <div class="vt-kpi__meta">@porcentajeParalizadas% — requiere atención</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-2">
+        <div class="vt-kpi vt-kpi--warning">
+            <div class="vt-kpi__label">Con sobrecosto</div>
+            <div class="vt-kpi__value">@sobrecosto</div>
+            <div class="vt-kpi__meta">Requiere auditoría</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Distribución por estado</span>
+                <span class="badge vt-badge-info">Tiempo real</span>
+            </div>
+            <div class="card-body">
+                <div class="vt-kpi__meta mb-2">Proporción actual de obras</div>
+                <div class="vt-chart">
+                    <canvas id="chartEstados"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Presupuesto por categoría</span>
+                <span class="badge vt-badge-success">Análisis financiero</span>
+            </div>
+            <div class="card-body">
+                <div class="vt-kpi__meta mb-2">Inversión asignada en soles (S/)</div>
+                <div class="vt-chart">
+                    <canvas id="chartPresupuesto"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Alertas y acciones pendientes</span>
+        <span class="badge vt-badge-danger">@(paralizadas + sobrecosto + solicitudesPendientes) activas</span>
+    </div>
+    <div class="card-body">
+        @if (paralizadas > 0)
+        {
+            <div class="alert alert-danger mb-3" role="alert">
+                <h2 class="h6 fw-bold mb-1">@paralizadas obra(s) paralizada(s)</h2>
+                <p class="mb-2 small">Obras con ejecución detenida que requieren intervención inmediata.</p>
+                <a asp-controller="Obras" asp-action="Index" asp-route-estado="Paralizada" class="btn btn-sm btn-outline-danger">
+                    Ver obras paralizadas
+                </a>
+            </div>
+        }
+
+        @if (sobrecosto > 0)
+        {
+            <div class="alert alert-warning mb-3" role="alert">
+                <h2 class="h6 fw-bold mb-1">@sobrecosto obra(s) con sobrecosto</h2>
+                <p class="mb-2 small">Proyectos que exceden el presupuesto adjudicado. Requieren revisión financiera urgente.</p>
+                <a asp-controller="Obras" asp-action="Index" asp-route-estado="Con Sobrecosto" class="btn btn-sm btn-outline-warning">
+                    Ver obras con sobrecosto
+                </a>
+            </div>
+        }
+
+        @if (solicitudesPendientes > 0)
+        {
+            <div class="alert alert-info mb-3" role="alert">
+                <h2 class="h6 fw-bold mb-1">@solicitudesPendientes solicitud(es) del Supervisor</h2>
+                <p class="mb-2 small">Incidencias en sus obras que requieren respuesta oficial con sustento documental.</p>
+                <a asp-action="Index" asp-route-conSolicitudes="true" class="btn btn-sm btn-outline-primary">
+                    Revisar obras con solicitudes
+                </a>
+            </div>
+        }
+
+        @if (paralizadas == 0 && sobrecosto == 0 && solicitudesPendientes == 0)
+        {
+            <div class="vt-empty">
+                <i class="bi bi-check-circle text-success"></i>
+                <p class="vt-empty__title">Sin alertas críticas</p>
+                <p class="vt-empty__text">Todas las obras se encuentran en estado regular y no hay pendientes.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+        Chart.defaults.color = '#6b7789';
+
+        const ctxEstados = document.getElementById('chartEstados').getContext('2d');
+        new Chart(ctxEstados, {
+            type: 'doughnut',
+            data: {
+                labels: ['Programadas', 'En Ejecución', 'Concluidas', 'Paralizadas', 'Con Sobrecosto'],
+                datasets: [{
+                    data: [@programadas, @enEjecucion, @concluidas, @paralizadas, @sobrecosto],
+                    backgroundColor: ['#1f5f8b', '#1c7a4a', '#5b6675', '#ab2f2f', '#96690d'],
+                    borderWidth: 1,
+                    borderColor: '#ffffff',
+                    hoverOffset: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 12, weight: '500' } }
+                    },
+                    tooltip: {
+                        backgroundColor: '#16202e',
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return ` ${context.label}: ${value} obras (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const ctxPresupuesto = document.getElementById('chartPresupuesto').getContext('2d');
+        new Chart(ctxPresupuesto, {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(Json.Serialize(categorias)),
+                datasets: [{
+                    label: 'Presupuesto Asignado (S/)',
+                    data: @Html.Raw(Json.Serialize(presupuestos)),
+                    backgroundColor: '#1a3a6b',
+                    borderColor: '#142c52',
+                    borderWidth: 1,
+                    borderRadius: 2,
+                    hoverBackgroundColor: '#142c52'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#16202e',
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed.y;
+                                return ` S/ ${value.toLocaleString('es-PE')}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#e6eaef' },
+                        ticks: {
+                            callback: function(value) { return 'S/ ' + (value / 1000) + 'k'; },
+                            font: { size: 11 }
+                        }
+                    },
+                    x: { grid: { display: false }, ticks: { font: { size: 12, weight: '500' } } }
+                }
+            }
+        });
+    });
+</script>
+}

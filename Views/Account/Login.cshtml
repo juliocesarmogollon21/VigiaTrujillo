@@ -1,0 +1,72 @@
+@model VigiaTrujillo.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Iniciar Sesión";
+}
+
+<div class="vt-login">
+    <div class="vt-login__overlay"></div>
+
+    <div class="container position-relative py-4 py-md-5">
+            <div class="row justify-content-center">
+                <div class="col-md-6 col-lg-5 col-xl-4">
+
+                <div class="text-center mb-4">
+                                    <span class="vt-login__escudo">
+                                        <img src="~/img/escudo-trujillo.png"
+                                             alt="Escudo de la Municipalidad Distrital de Trujillo"
+                                             class="vt-login__escudo-img">
+                                    </span>
+                                    <h1 class="vt-login__titulo">Vigía Trujillo</h1>
+                                    <p class="vt-login__subtitulo">Acceso a la Plataforma de Transparencia</p>
+                                </div>
+
+                <div class="card vt-login__tarjeta">
+                    <div class="card-body p-4">
+                        <h2 class="h6 fw-semibold mb-3">Iniciar sesión</h2>
+
+                        <form asp-action="Login" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger d-block small" role="alert">
+                                Verifique sus credenciales e intente nuevamente.
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Usuario" class="form-label">Usuario</label>
+                                <input asp-for="Usuario" class="form-control" autocomplete="username" required autofocus />
+                                <span asp-validation-for="Usuario" class="text-danger small d-block mt-1"></span>
+                            </div>
+
+                            <div class="mb-4">
+                                <label asp-for="Contrasena" class="form-label">Contraseña</label>
+                                <input asp-for="Contrasena" class="form-control" autocomplete="current-password" type="password" required />
+                                <span asp-validation-for="Contrasena" class="text-danger small d-block mt-1"></span>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                Ingresar al Sistema
+                            </button>
+                        </form>
+
+                        <hr class="vt-divider" />
+
+                        <div class="text-center">
+                            <a asp-controller="Obras" asp-action="Publico" class="small">
+                                Volver al portal público
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="vt-login__pie text-center">
+                    Municipalidad Distrital de Trujillo
+                </p>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

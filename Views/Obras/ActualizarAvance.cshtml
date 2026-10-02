@@ -1,0 +1,107 @@
+@model VigiaTrujillo.Models.Obra
+@{
+    ViewData["Title"] = "Actualizar Avance Físico";
+    decimal avanceActual = Model.AvanceFisico ?? 0;
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="vt-page-header">
+            <span class="vt-eyebrow">Seguimiento de avance</span>
+            <h1>Actualizar avance físico</h1>
+            <p class="vt-subtitle">Ingrese el porcentaje de avance verificado a la fecha. Si el valor es menor al registrado, deberá justificar el retroceso.</p>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="mb-4">
+                    <h2 class="h6 mb-1">@Model.Nombre</h2>
+                    <p class="vt-kpi__meta mb-3">
+                        <span class="vt-code">@Model.Cui</span>
+                        <span class="badge vt-badge-info ms-1">@Model.Estado</span>
+                    </p>
+
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="vt-label mb-0">Avance físico registrado</span>
+                        <span class="vt-figure fw-semibold">@avanceActual.ToString("N1")%</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: @avanceActual%"
+                             aria-valuenow="@avanceActual" aria-valuemin="0" aria-valuemax="100"
+                             aria-label="Avance físico registrado"></div>
+                    </div>
+                </div>
+
+                <hr class="vt-divider" />
+
+                <form asp-action="ActualizarAvance" asp-controller="Obras" method="post">
+                    <input type="hidden" name="id" value="@Model.Id" />
+
+                    <div class="mb-4">
+                        <label for="nuevoAvance" class="form-label">Nuevo avance físico (%) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="number" id="nuevoAvance" name="nuevoAvance" class="form-control"
+                                   min="0" max="100" step="0.1" required value="@avanceActual" />
+                            <span class="input-group-text fw-semibold">%</span>
+                        </div>
+                        <div class="form-text">Ingrese el porcentaje de avance verificado a la fecha.</div>
+                    </div>
+
+                    <div id="retrocesoAlert" class="alert alert-warning d-none mb-3" role="alert">
+                        <strong>Atención:</strong> ha ingresado un avance menor al registrado (@avanceActual%). Debe justificar este retroceso.
+                    </div>
+
+                    <div id="motivoGroup" class="mb-4 d-none">
+                        <label for="motivoRetroceso" class="form-label">
+                            Motivo del retroceso <span class="text-danger">*</span>
+                        </label>
+                        <textarea id="motivoRetroceso" name="motivoRetroceso" class="form-control border-warning" rows="3"
+                                  placeholder="Describa detalladamente la razón de la disminución del avance (ej. lluvias, falta de materiales, huelga, etc.)"></textarea>
+                    </div>
+
+                    <hr class="vt-divider" />
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-action="Details" asp-controller="Obras" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>Guardar actualización
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const avanceActual = @avanceActual;
+            const inputAvance = document.getElementById('nuevoAvance');
+            const motivoGroup = document.getElementById('motivoGroup');
+            const motivoInput = document.getElementById('motivoRetroceso');
+            const retrocesoAlert = document.getElementById('retrocesoAlert');
+
+            function validarRetroceso() {
+                const nuevoValor = parseFloat(inputAvance.value);
+
+                if (!isNaN(nuevoValor) && nuevoValor < avanceActual) {
+                    motivoGroup.classList.remove('d-none');
+                    retrocesoAlert.classList.remove('d-none');
+                    motivoInput.setAttribute('required', 'required');
+                } else {
+                    motivoGroup.classList.add('d-none');
+                    retrocesoAlert.classList.add('d-none');
+                    motivoInput.removeAttribute('required');
+                    motivoInput.value = '';
+                }
+            }
+
+            validarRetroceso();
+
+            inputAvance.addEventListener('input', validarRetroceso);
+        });
+    </script>
+}

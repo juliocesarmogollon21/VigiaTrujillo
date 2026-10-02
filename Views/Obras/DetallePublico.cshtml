@@ -1,0 +1,179 @@
+@model VigiaTrujillo.Models.Obra
+@{
+    ViewData["Title"] = Model.Nombre;
+    decimal avanceActual = Model.AvanceFisico ?? 0;
+    decimal presupuesto = Model.Presupuesto ?? 0;
+}
+
+<div class="vt-page-header">
+    <span class="vt-eyebrow">Obra pública de Trujillo</span>
+    <h1>@Model.Nombre</h1>
+    <p class="vt-subtitle">@Model.Ubicacion</p>
+    <div class="d-flex flex-wrap gap-2 mt-3 align-items-center">
+        <span class="vt-code">CUI @Model.Cui</span>
+        <span class="badge @(Model.Estado == "En ejecución" ? "vt-badge-success" :
+                             Model.Estado == "Concluida" ? "vt-badge-info" :
+                             Model.Estado == "Paralizada" ? "vt-badge-danger" :
+                             Model.Estado == "Con Sobrecosto" ? "vt-badge-warning" : "vt-badge-neutral")">
+            @Model.Estado
+        </span>
+        <span class="vt-figure fw-semibold ms-auto">S/ @presupuesto.ToString("N0")</span>
+    </div>
+    <div class="vt-kpi__meta">Presupuesto asignado</div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">Avance físico de la obra</div>
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="vt-label mb-0">Avance verificado</span>
+            <span class="vt-figure fw-semibold">@avanceActual.ToString("N1")%</span>
+        </div>
+        <div class="progress">
+            <div class="progress-bar bg-info" role="progressbar" style="width: @avanceActual%"
+                 aria-valuenow="@avanceActual" aria-valuemin="0" aria-valuemax="100"
+                 aria-label="Avance físico de la obra"></div>
+        </div>
+        <div class="d-flex justify-content-between mt-2 vt-kpi__meta">
+            <span>Inicio: @(Model.FechaInicio?.ToString("dd/MM/yyyy") ?? "—")</span>
+            <span>Fin previsto: @(Model.FechaFin?.ToString("dd/MM/yyyy") ?? "—")</span>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="obraPublicoTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">
+            Información general
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab">
+            Documentos y evidencia fotográfica
+            <span class="badge vt-badge-info ms-1">@(Model.Archivos?.Count ?? 0)</span>
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="obraPublicoTabsContent">
+
+    <div class="tab-pane fade show active" id="info" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <h2 class="h6 mb-3">Datos generales</h2>
+                        <dl class="vt-dl">
+                            <dt>Nombre / Componente</dt>
+                            <dd>@Model.Nombre</dd>
+
+                            <dt>Ubicación</dt>
+                            <dd>@Model.Ubicacion</dd>
+
+                            <dt>Código Único (CUI)</dt>
+                            <dd><span class="vt-code">@Model.Cui</span></dd>
+
+                            <dt>Contratista</dt>
+                            <dd>@(string.IsNullOrWhiteSpace(Model.Contratista) ? "—" : Model.Contratista)</dd>
+                        </dl>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h2 class="h6 mb-3">Datos financieros y de ejecución</h2>
+                        <dl class="vt-dl">
+                            <dt>Presupuesto</dt>
+                            <dd class="vt-figure fw-semibold">S/ @(Model.Presupuesto?.ToString("N2") ?? "—")</dd>
+
+                            <dt>Fecha de inicio</dt>
+                            <dd>@(Model.FechaInicio?.ToString("dd/MM/yyyy") ?? "—")</dd>
+
+                            <dt>Fecha de fin</dt>
+                            <dd>@(Model.FechaFin?.ToString("dd/MM/yyyy") ?? "—")</dd>
+
+                            <dt>Avance físico</dt>
+                            <dd class="vt-figure fw-semibold">@avanceActual.ToString("N1")%</dd>
+
+                            <dt>Zona</dt>
+                            <dd>@(string.IsNullOrWhiteSpace(Model.Zona) ? "—" : Model.Zona)</dd>
+
+                            <dt>Categoría</dt>
+                            <dd>@(string.IsNullOrWhiteSpace(Model.Categoria) ? "—" : Model.Categoria)</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="docs" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span>Evidencia publicada por la Municipalidad</span>
+                <small class="vt-kpi__meta fw-normal">Documentos y fotografías oficiales que sustentan la información de esta obra.</small>
+            </div>
+            <div class="card-body">
+                @if (Model.Archivos != null && Model.Archivos.Any())
+                {
+                    <div class="row g-3">
+                        @foreach (var a in Model.Archivos)
+                        {
+                            var esImagen = a.Tipo == "foto" || new[] { ".jpg", ".jpeg", ".png" }.Contains(System.IO.Path.GetExtension(a.Ruta).ToLowerInvariant());
+                            <div class="col-md-4 col-lg-3">
+                                @if (esImagen)
+                                {
+                                    <div class="vt-evidence mb-2">
+                                        <img src="@a.Ruta" alt="@a.Nombre" loading="lazy" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="vt-evidence mb-2 d-flex align-items-center justify-content-center text-muted">
+                                        <i class="bi bi-file-earmark-pdf fs-1"></i>
+                                    </div>
+                                }
+                                <div class="vt-label text-truncate" title="@a.Nombre">@a.Nombre</div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge @(a.Tipo == "foto" ? "vt-badge-success" : "vt-badge-neutral")">@a.Tipo</span>
+                                    <a href="@a.Ruta" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">Ver</a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="vt-empty">
+                        <i class="bi bi-folder-x"></i>
+                        <p class="vt-empty__title">Aún no se ha publicado evidencia para esta obra</p>
+                        <p class="vt-empty__text">La Municipalidad aún no ha cargado fotografías o documentos oficiales para este proyecto.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-body">
+        <div class="row align-items-center g-3">
+            <div class="col-md-8">
+                <h2 class="h6 mb-1">¿Detectaste alguna irregularidad en esta obra?</h2>
+                <p class="vt-kpi__meta mb-0">
+                    Tu reporte es anónimo. Puedes adjuntar fotografías como evidencia y recibirás un código
+                    de seguimiento único para consultar el estado de tu reporte en cualquier momento.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a asp-controller="Incidencias" asp-action="Registrar" asp-route-obraId="@Model.Id" class="btn btn-warning">
+                    <i class="bi bi-send me-1"></i>Reportar irregularidad
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a asp-action="Publico" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Volver al listado de obras
+    </a>
+</div>

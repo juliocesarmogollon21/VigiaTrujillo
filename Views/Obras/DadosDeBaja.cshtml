@@ -1,0 +1,84 @@
+@model IReadOnlyList<VigiaTrujillo.Models.Obra>
+@{
+    ViewData["Title"] = "Obras Dadas de Baja";
+}
+
+<div class="vt-page-header">
+    <span class="vt-eyebrow">Archivo hist&oacute;rico</span>
+    <h1>Obras dadas de baja</h1>
+    <p class="vt-subtitle">
+        Estas obras no se eliminaron de la base de datos: solo dejaron de estar activas.
+        El registro y todo su hist&oacute;rico se conservan para auditor&iacute;a.
+    </p>
+</div>
+
+<div class="d-flex justify-content-end mb-3">
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Volver al listado activo
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">Registro de obras dadas de baja (@Model.Count)</div>
+
+    @if (!Model.Any())
+    {
+        <div class="card-body">
+            <div class="vt-empty">
+                <i class="bi bi-archive" style="font-size:2.5rem;"></i>
+                <p class="vt-empty__title">No hay obras dadas de baja</p>
+                <p class="vt-empty__text">
+                    Cuando se dé de baja una obra, aparecer&aacute; aqu&iacute; con su motivo, fecha y responsable.
+                </p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th>Obra</th>
+                        <th>CUI</th>
+                        <th>Estado</th>
+                        <th>Fecha de baja</th>
+                        <th>Motivo</th>
+                        <th>Registrado por</th>
+                        <th class="text-end">Acci&oacute;n</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var obra in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@obra.Nombre</div>
+                                <small class="text-muted">@obra.Ubicacion</small>
+                            </td>
+                            <td><span class="vt-code">@obra.Cui</span></td>
+                            <td><span class="badge vt-badge-neutral">@obra.Estado</span></td>
+                            <td class="vt-figure">
+                                @(obra.FechaBaja?.ToString("dd/MM/yyyy HH:mm") ?? "—")
+                            </td>
+                            <td>
+                                <small>@(string.IsNullOrWhiteSpace(obra.MotivoBaja) ? "—" : obra.MotivoBaja)</small>
+                            </td>
+                            <td><small>@(obra.UsuarioBaja ?? "—")</small></td>
+                            <td class="text-end">
+                                <form asp-action="Reactivar" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@obra.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary"
+                                            title="Reactivar esta obra">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

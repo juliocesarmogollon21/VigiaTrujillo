@@ -1,0 +1,311 @@
+@model VigiaTrujillo.ViewModels.ConsultaEstadoViewModel
+@{
+    ViewData["Title"] = "Consultar Estado de Reporte";
+}
+
+<div class="vt-page-header">
+    <span class="vt-eyebrow">Seguimiento Ciudadano</span>
+    <h1>Consulta el Estado de tu Reporte</h1>
+    <p class="vt-subtitle">
+        Ingresa el código de seguimiento que recibiste al registrar tu incidencia para conocer el estado
+        actual y las observaciones del Supervisor de Transparencia.
+    </p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body p-4">
+        <h2 class="mb-3">Ingresa tu código de seguimiento</h2>
+        <form asp-action="Consultar" method="post">
+            @Html.AntiForgeryToken()
+            <div class="row g-3 align-items-end">
+                <div class="col-md-8">
+                    <label asp-for="Codigo" class="form-label">Código de reporte</label>
+                    <div class="input-group">
+                        <span class="input-group-text">INC</span>
+                        <input asp-for="Codigo" class="form-control" placeholder="Ej. INC-2026-483920" autocomplete="off" required />
+                    </div>
+                    <span asp-validation-for="Codigo" class="text-danger small d-block mt-1"></span>
+                    <div class="form-text">
+                        El código tiene el formato <span class="vt-code">INC-A&Ntilde;O-N&Uacute;MERO</span> y fue generado al momento de registrar tu incidencia.
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        Buscar Reporte
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model.Buscado)
+{
+    if (Model.Resultado == null)
+    {
+        <div class="card">
+            <div class="card-body">
+                <div class="vt-empty">
+                    <span class="vt-badge-warning">Sin resultados</span>
+                    <h2 class="vt-empty__title">No se encontró ningún reporte</h2>
+                    <p class="vt-empty__text mb-4">
+                        No existe ninguna incidencia registrada con el código
+                        <span class="vt-code">@Model.Codigo</span>.
+                        Verifica que el código sea correcto o intenta nuevamente.
+                    </p>
+                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                        <a asp-action="Consultar" class="btn btn-outline-primary px-4">
+                            Intentar con otro código
+                        </a>
+                        <a asp-controller="Obras" asp-action="Publico" class="btn btn-outline-secondary px-4">
+                            Ver obras públicas
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        var i = Model.Resultado;
+
+        var estadoColor = i.Estado switch
+        {
+            "Pendiente de revisión" => "warning",
+            "En revisión" => "info",
+            "Información solicitada" => "neutral",
+            "En verificación" => "info",
+            "Resuelta" => "success",
+            "Derivada" => "danger",
+            _ => "neutral"
+        };
+
+        var estadosFlujo = new[] { "Pendiente de revisión", "En revisión", "Información solicitada", "En verificación", "Resuelta", "Derivada" };
+        var estadoActualIndex = Array.IndexOf(estadosFlujo, i.Estado);
+        if (estadoActualIndex < 0) estadoActualIndex = 0;
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <span class="vt-label">Reporte</span>
+                        <h2 class="mb-0">@i.CodigoSeguimiento</h2>
+                        <small class="text-muted">
+                            Registrado el @i.FechaRegistro.ToString("dd 'de' MMMM 'de' yyyy 'a las' HH:mm")
+                        </small>
+                    </div>
+                    <span class="vt-badge-@estadoColor" style="font-size: 0.8125rem; padding: 0.4em 0.75em;">@i.Estado</span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+
+                <div class="vt-kpi mb-4">
+                    <span class="vt-label">Obra reportada</span>
+                    <h3 class="mb-1">@i.Obra?.Nombre</h3>
+                    <p class="text-muted small mb-0">@i.Obra?.Ubicacion</p>
+                </div>
+
+                <div class="mb-4">
+                    <span class="vt-label">Descripción del reporte</span>
+                    <p class="mb-0">@i.Descripcion</p>
+                </div>
+
+                <div class="mb-4">
+                    <span class="vt-label">Progreso del reporte</span>
+                    <div class="progress mb-3">
+                        @{
+                            var totalPasos = 5;
+                            var avance = Math.Round(((double)Math.Min(estadoActualIndex, totalPasos - 1) / (totalPasos - 1)) * 100);
+                            var claseAvance = i.Estado == "Resuelta" ? "bg-success" : (i.Estado == "Derivada" ? "bg-danger" : (estadoActualIndex == 0 ? "bg-info" : "bg-warning"));
+                        }
+                        <div class="progress-bar @claseAvance" role="progressbar" style="width: @avance%;" aria-valuenow="@avance" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="row g-2">
+                        @{
+                            var pasos = new[] {
+                                new { Nombre = "Pendiente", Icono = "bi-clock", Estado = "Pendiente de revisión" },
+                                new { Nombre = "En Revisión", Icono = "bi-search", Estado = "En revisión" },
+                                new { Nombre = "Info. Solicitada", Icono = "bi-question-circle", Estado = "Información solicitada" },
+                                new { Nombre = "En Verificación", Icono = "bi-shield-check", Estado = "En verificación" },
+                                new { Nombre = "Resuelto", Icono = "bi-check-circle", Estado = "Resuelta" }
+                            };
+                        }
+                        @for (int idx = 0; idx < pasos.Length; idx++)
+                        {
+                            var paso = pasos[idx];
+                            string clasePaso = "vt-kpi";
+                            string iconoMostrar = paso.Icono;
+
+                            if (idx < estadoActualIndex)
+                            {
+                                clasePaso = "vt-kpi vt-kpi--success";
+                                iconoMostrar = "bi-check-lg";
+                            }
+                            else if (idx == estadoActualIndex)
+                            {
+                                if (paso.Estado == "Información solicitada")
+                                    clasePaso = "vt-kpi vt-kpi--warning";
+                                else if (paso.Estado == "Resuelta")
+                                    clasePaso = "vt-kpi vt-kpi--success";
+                                else
+                                    clasePaso = "vt-kpi vt-kpi--accent";
+                            }
+
+                            if (idx == pasos.Length - 1 && i.Estado == "Derivada" && idx == estadoActualIndex)
+                            {
+                                clasePaso = "vt-kpi vt-kpi--danger";
+                                iconoMostrar = "bi-x-circle";
+                            }
+
+                            <div class="col-6 col-md-4 col-lg">
+                                <div class="@clasePaso">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi @iconoMostrar"></i>
+                                        <span class="vt-kpi__label mb-0">@paso.Nombre</span>
+                                    </div>
+                                    @if (idx <= estadoActualIndex)
+                                    {
+                                        <div class="vt-kpi__meta">
+                                            @if (idx == 0)
+                                            {
+                                                @i.FechaRegistro.ToString("dd/MM/yyyy")
+                                            }
+                                            else
+                                            {
+                                                <span class="vt-badge-success">Completado</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(i.ResultadoRevision))
+                {
+                    <div class="alert alert-info mb-4" role="alert">
+                        <h3 class="h6 alert-heading fw-bold mb-1">Resultado formal de la revisión</h3>
+                        <p class="mb-0">@i.ResultadoRevision</p>
+                    </div>
+                }
+
+                @if (i.Observaciones != null && i.Observaciones.Any())
+                {
+                    <div class="mb-4">
+                        <span class="vt-label">Historial de atención (@i.Observaciones.Count)</span>
+                        <ul class="vt-timeline">
+                            @foreach (var obs in i.Observaciones.OrderByDescending(o => o.Fecha))
+                            {
+                                var partes = obs.Texto.Split(new[] { "\n\n\U0001F4CE Archivo adjunto: " }, StringSplitOptions.None);
+                                var textoPrincipal = partes[0];
+                                var tieneArchivo = partes.Length > 1;
+
+                                string nombreArchivo = "";
+                                string rutaArchivo = "";
+
+                                if (tieneArchivo)
+                                {
+                                    var info = partes[1].Split(new[] { " (" }, StringSplitOptions.None);
+                                    nombreArchivo = info[0];
+                                    rutaArchivo = info.Length > 1 ? info[1].TrimEnd(')') : "";
+                                }
+
+                                bool esMunicipal = obs.Autor.Contains("Municipal");
+                                bool esSistema = textoPrincipal.StartsWith("[Cambio de estado") ||
+                                                 textoPrincipal.StartsWith("[Solicitud de información]");
+                                string claseAutor = esMunicipal ? "vt-badge-warning" : (esSistema ? "vt-badge-neutral" : "vt-badge-info");
+                                string inicial = obs.Autor.Substring(0, 1).ToUpper();
+                                string iconoAvatar = esSistema ? "bi-gear" : "bi-person-fill";
+
+                                <li class="vt-timeline__item">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="@claseAutor">@inicial</span>
+                                                    <div>
+                                                        <div class="fw-semibold">@obs.Autor</div>
+                                                        @if (esSistema && textoPrincipal.StartsWith("[Cambio de estado"))
+                                                        {
+                                                            <span class="vt-badge-info">Cambio de estado</span>
+                                                        }
+                                                        else if (textoPrincipal.StartsWith("[Solicitud de información]"))
+                                                        {
+                                                            <span class="vt-badge-warning">Solicitud</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <div class="text-muted small">
+                                                    <i class="bi @iconoAvatar me-1"></i>@obs.Fecha.ToString("dd/MM/yyyy HH:mm")
+                                                </div>
+                                            </div>
+                                            <p class="mb-0" style="white-space: pre-wrap;">@textoPrincipal</p>
+
+                                            @if (tieneArchivo && !string.IsNullOrEmpty(rutaArchivo))
+                                            {
+                                                <hr class="vt-divider" />
+                                                <a href="@rutaArchivo" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    Descargar sustento: @nombreArchivo
+                                                </a>
+                                            }
+                                        </div>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 justify-content-between">
+            <a asp-action="Consultar" class="btn btn-outline-secondary px-4">
+                Buscar otro reporte
+            </a>
+            <a asp-controller="Obras" asp-action="Publico" class="btn btn-outline-primary px-4">
+                Volver al listado de obras
+            </a>
+        </div>
+    }
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    @if (Model.Resultado != null)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                if (typeof signalR !== "undefined") {
+                    const connection = new signalR.HubConnectionBuilder()
+                        .withUrl("/hubs/vigia")
+                        .withAutomaticReconnect()
+                        .build();
+
+                    const codigoIncidencia = "@Model.Resultado.CodigoSeguimiento";
+
+                    connection.on("IncidenciaActualizada", function (data) {
+                        if (data && data.codigo === codigoIncidencia) {
+                            if (typeof showToast === "function") {
+                                showToast("Reporte Actualizado", "El estado de tu reporte ha cambiado. Actualizando...", "info");
+                            }
+                            setTimeout(() => window.location.reload(), 2000);
+                        }
+                    });
+
+                    connection.on("ObservacionAgregada", function (data) {
+                        if (data && data.codigo === codigoIncidencia) {
+                            if (typeof showToast === "function") {
+                                showToast("Nueva Observación", "El supervisor ha agregado una nueva observación a tu reporte.", "success");
+                            }
+                            setTimeout(() => window.location.reload(), 2000);
+                        }
+                    });
+
+                    connection.start().catch(err => console.error("SignalR connection error: ", err));
+                }
+            });
+        </script>
+    }
+}
