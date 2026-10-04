@@ -10,9 +10,12 @@ public class ObraListItemViewModel
     public DateTime? FechaInicio { get; set; }
     public DateTime? FechaFin { get; set; }
     public decimal? AvanceFisico { get; set; }
+    
     public bool TieneSolicitudPendiente { get; set; }
     public int? IncidenciaIdPendiente { get; set; }
     public string? CodigoIncidenciaPendiente { get; set; }
+    
+    public string? TextoSolicitudPendiente { get; set; }
 }
 
 public class ObraIndexViewModel

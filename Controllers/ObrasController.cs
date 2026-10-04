@@ -69,7 +69,9 @@ public class ObrasController : Controller
 
         return View();
     }
-        public IActionResult Index(string? busqueda, string? estado, bool conSolicitudes = false)
+
+    [HttpGet]
+    public IActionResult Index(string? busqueda, string? estado, bool conSolicitudes = false)
     {
         var obras = _obraService.GetAll(busqueda, estado);
         
@@ -89,20 +91,30 @@ public class ObrasController : Controller
             Busqueda = busqueda,
             Estado = estado,
             ConSolicitudes = conSolicitudes,
-            Obras = obras.Select(o => new ObraListItemViewModel
+            Obras = obras.Select(o => 
             {
-                Id = o.Id, 
-                Nombre = o.Nombre, 
-                Ubicacion = o.Ubicacion, 
-                Cui = o.Cui,
-                Estado = o.Estado, 
-                FechaInicio = o.FechaInicio, 
-                FechaFin = o.FechaFin,
-                AvanceFisico = o.AvanceFisico,
-                
-                TieneSolicitudPendiente = dictPendientes.ContainsKey(o.Id),
-                IncidenciaIdPendiente = dictPendientes.ContainsKey(o.Id) ? dictPendientes[o.Id].Id : (int?)null,
-                CodigoIncidenciaPendiente = dictPendientes.ContainsKey(o.Id) ? dictPendientes[o.Id].CodigoSeguimiento : null
+                var incPendiente = dictPendientes.ContainsKey(o.Id) ? dictPendientes[o.Id] : null;
+
+                var textoSolicitud = incPendiente?.Observaciones?
+                    .OrderByDescending(obs => obs.Fecha)
+                    .FirstOrDefault()?.Texto ?? "Sin detalles de la solicitud.";
+
+                return new ObraListItemViewModel
+                {
+                    Id = o.Id, 
+                    Nombre = o.Nombre, 
+                    Ubicacion = o.Ubicacion, 
+                    Cui = o.Cui,
+                    Estado = o.Estado, 
+                    FechaInicio = o.FechaInicio, 
+                    FechaFin = o.FechaFin,
+                    AvanceFisico = o.AvanceFisico,
+                    
+                    TieneSolicitudPendiente = incPendiente != null,
+                    IncidenciaIdPendiente = incPendiente?.Id,
+                    CodigoIncidenciaPendiente = incPendiente?.CodigoSeguimiento,
+                    TextoSolicitudPendiente = textoSolicitud
+                };
             }).ToList()
         };
         return View(vm);
@@ -170,17 +182,17 @@ public class ObrasController : Controller
     }
 
     [HttpGet, AllowAnonymous]
-        public IActionResult DetallePublico(int id)
-        {
-            var obra = _obraService.GetByIdWithArchivos(id);
+    public IActionResult DetallePublico(int id)
+    {
+        var obra = _obraService.GetByIdWithArchivos(id);
 
-            if (obra == null || !obra.Activo)
-            { 
-                TempData["Error"] = "La obra no está disponible."; 
-                return RedirectToAction(nameof(Publico)); 
-            } 
-            return View(obra);
-        }
+        if (obra == null || !obra.Activo)
+        { 
+            TempData["Error"] = "La obra no está disponible."; 
+            return RedirectToAction(nameof(Publico)); 
+        } 
+        return View(obra);
+    }
 
     public IActionResult Create() => View(new ObraFormViewModel { Estado = "Programada", Estados = BuildEstados("Programada") });
 
@@ -223,6 +235,7 @@ public class ObrasController : Controller
         }
     }
 
+        [HttpGet]
     public IActionResult Edit(int id)
     {
         var obra = _obraService.GetById(id);
@@ -231,6 +244,13 @@ public class ObrasController : Controller
             TempData["Error"] = "La obra solicitada no existe."; 
             return RedirectToAction(nameof(Index)); 
         }
+
+        if (obra.Estado == "Concluida")
+        {
+            TempData["Error"] = "No es posible editar una obra que ya se encuentra en estado 'Concluida'. Los registros finales son inmutables.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
         var vm = MapForm(obra); 
         vm.Estados = BuildEstados(obra.Estado); 
         return View(vm);
@@ -243,6 +263,13 @@ public class ObrasController : Controller
         { 
             TempData["Error"] = "Identificador inconsistente."; 
             return RedirectToAction(nameof(Index)); 
+        }
+
+        var obraExistente = _obraService.GetById(id);
+        if (obraExistente != null && obraExistente.Estado == "Concluida")
+        {
+            TempData["Error"] = "No es posible editar una obra que ya se encuentra en estado 'Concluida'.";
+            return RedirectToAction(nameof(Details), new { id });
         }
         
         if (_obraService.ExistsCui(vm.Cui, vm.Id))
@@ -559,7 +586,7 @@ public class ObrasController : Controller
         var textoObservacion = respuesta.Trim();
         if (!string.IsNullOrEmpty(rutaArchivo))
         {
-            textoObservacion += $"\n\nArchivo adjunto: {archivoSustento!.FileName} ({rutaArchivo})";
+            textoObservacion += $"\n\n📎 Archivo adjunto: {archivoSustento!.FileName} ({rutaArchivo})";
         }
 
         _incidenciaService.AgregarObservacion(

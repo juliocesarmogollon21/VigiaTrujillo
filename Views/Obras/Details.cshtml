@@ -3,6 +3,7 @@
     ViewData["Title"] = "Detalle de Obra";
     decimal avanceActual = Model.AvanceFisico ?? 0;
     decimal presupuesto = Model.Presupuesto ?? 0;
+    bool esConcluida = Model.Estado == "Concluida";
 }
 
 <div class="vt-page-header">
@@ -17,7 +18,7 @@
                              Model.Estado == "Con Sobrecosto" ? "vt-badge-warning" : "vt-badge-neutral")">
             @Model.Estado
         </span>
-        <span class="vt-figure fw-semibold ms-auto">S/ @presupuesto.ToString("N0")</span>
+        <span class="vt-figure fw-semibold ms-auto">S/ @(presupuesto.ToString("N0"))</span>
     </div>
     <div class="vt-kpi__meta">Presupuesto asignado</div>
 </div>
@@ -27,11 +28,11 @@
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="vt-label mb-0">Avance verificado</span>
-            <span class="vt-figure fw-semibold">@avanceActual.ToString("N1")%</span>
+            <span class="vt-figure fw-semibold">@(avanceActual.ToString("N1"))%</span>
         </div>
         <div class="progress">
-            <div class="progress-bar bg-info" role="progressbar" style="width: @avanceActual%"
-                 aria-valuenow="@avanceActual" aria-valuemin="0" aria-valuemax="100"
+            <div class="progress-bar bg-info" role="progressbar" style="width: @(avanceActual)%"
+                 aria-valuenow="@(avanceActual)" aria-valuemin="0" aria-valuemax="100"
                  aria-label="Avance físico de la obra"></div>
         </div>
         <div class="d-flex justify-content-between mt-2 vt-kpi__meta">
@@ -65,13 +66,10 @@
                         <dl class="vt-dl">
                             <dt>Nombre / Componente</dt>
                             <dd>@Model.Nombre</dd>
-
                             <dt>Ubicación</dt>
                             <dd>@Model.Ubicacion</dd>
-
                             <dt>Código Único (CUI)</dt>
                             <dd><span class="vt-code">@Model.Cui</span></dd>
-
                             <dt>Contratista</dt>
                             <dd>@(string.IsNullOrWhiteSpace(Model.Contratista) ? "—" : Model.Contratista)</dd>
                         </dl>
@@ -82,19 +80,14 @@
                         <dl class="vt-dl">
                             <dt>Presupuesto</dt>
                             <dd class="vt-figure fw-semibold">S/ @(Model.Presupuesto?.ToString("N2") ?? "—")</dd>
-
                             <dt>Fecha de inicio</dt>
                             <dd>@(Model.FechaInicio?.ToString("dd/MM/yyyy") ?? "—")</dd>
-
                             <dt>Fecha de fin</dt>
                             <dd>@(Model.FechaFin?.ToString("dd/MM/yyyy") ?? "—")</dd>
-
                             <dt>Avance físico</dt>
-                            <dd class="vt-figure fw-semibold">@avanceActual.ToString("N1")%</dd>
-
+                            <dd class="vt-figure fw-semibold">@(avanceActual.ToString("N1"))%</dd>
                             <dt>Zona</dt>
                             <dd>@(string.IsNullOrWhiteSpace(Model.Zona) ? "—" : Model.Zona)</dd>
-
                             <dt>Categoría</dt>
                             <dd>@(string.IsNullOrWhiteSpace(Model.Categoria) ? "—" : Model.Categoria)</dd>
                         </dl>
@@ -119,13 +112,17 @@
             </div>
         </div>
     </div>
+    
     <div class="tab-pane fade" id="archivos" role="tabpanel">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center gap-2">
                 <span>Archivos de la obra</span>
-                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#subirArchivoModal">
-                    <i class="bi bi-upload me-1"></i>Subir archivo
-                </button>
+                @if (!esConcluida)
+                {
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#subirArchivoModal">
+                        <i class="bi bi-upload me-1"></i>Subir archivo
+                    </button>
+                }
             </div>
             <div class="card-body">
                 @if (Model.Archivos != null && Model.Archivos.Any())
@@ -164,9 +161,12 @@
                         <i class="bi bi-folder-x"></i>
                         <p class="vt-empty__title">Aún no se ha publicado evidencia para esta obra</p>
                         <p class="vt-empty__text">Sube fotografías o documentos para sustentar la información oficial.</p>
-                        <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#subirArchivoModal">
-                            <i class="bi bi-upload me-1"></i>Subir primer archivo
-                        </button>
+                        @if (!esConcluida)
+                        {
+                            <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#subirArchivoModal">
+                                <i class="bi bi-upload me-1"></i>Subir primer archivo
+                            </button>
+                        }
                     </div>
                 }
             </div>
@@ -179,82 +179,96 @@
         <a asp-action="Index" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i>Volver al listado
         </a>
-        <div class="d-flex flex-wrap gap-2">
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary">
-                <i class="bi bi-pencil-square me-1"></i>Editar información
-            </a>
-            <a asp-action="ActualizarAvance" asp-route-id="@Model.Id" class="btn btn-outline-success">
-                <i class="bi bi-graph-up-arrow me-1"></i>Actualizar avance
-            </a>
-            <a asp-action="CambiarEstado" asp-route-id="@Model.Id" class="btn btn-outline-warning">
-                <i class="bi bi-arrow-left-right me-1"></i>Cambiar estado
-            </a>
-        </div>
+
+        @if (!esConcluida)
+        {
+            <div class="d-flex flex-wrap gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary">
+                    <i class="bi bi-pencil-square me-1"></i>Editar información
+                </a>
+                <a asp-action="ActualizarAvance" asp-route-id="@Model.Id" class="btn btn-outline-success">
+                    <i class="bi bi-graph-up-arrow me-1"></i>Actualizar avance
+                </a>
+                <a asp-action="CambiarEstado" asp-route-id="@Model.Id" class="btn btn-outline-warning">
+                    <i class="bi bi-arrow-left-right me-1"></i>Cambiar estado
+                </a>
+            </div>
+        }
+        else
+        {
+            <span class="btn btn-outline-secondary disabled" title="No se pueden realizar modificaciones a una obra concluida">
+                <i class="bi bi-lock-fill me-1"></i>Registro cerrado (Concluida)
+            </span>
+        }
     </div>
 </div>
 
-<div class="modal fade" id="subirArchivoModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form asp-action="SubirArchivo" method="post" enctype="multipart/form-data">
-                <div class="modal-header">
-                    <h5 class="modal-title">Subir archivo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" name="id" value="@Model.Id" />
-                    <div class="mb-3">
-                        <label class="form-label" for="inputArchivo">Seleccionar archivo</label>
-                        <input type="file" name="archivo" id="inputArchivo" class="form-control" required />
-                        <div class="form-text">Formatos permitidos: JPG, PNG, PDF, DOC. Máximo 10 MB.</div>
+@if (!esConcluida)
+{
+    <div class="modal fade" id="subirArchivoModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form asp-action="SubirArchivo" method="post" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Subir archivo</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="selectTipoArchivo">Tipo de archivo</label>
-                        <select name="tipo" id="selectTipoArchivo" class="form-select">
-                            <option value="documento">Documento (PDF, DOC, etc.)</option>
-                            <option value="foto">Fotografía (JPG, PNG, etc.)</option>
-                        </select>
+                    <div class="modal-body">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <div class="mb-3">
+                            <label class="form-label" for="inputArchivo">Seleccionar archivo</label>
+                            <input type="file" name="archivo" id="inputArchivo" class="form-control" required />
+                            <div class="form-text">Formatos permitidos: JPG, PNG, PDF, DOC. Máximo 10 MB.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="selectTipoArchivo">Tipo de archivo</label>
+                            <select name="tipo" id="selectTipoArchivo" class="form-select">
+                                <option value="documento">Documento (PDF, DOC, etc.)</option>
+                                <option value="foto">Fotografía (JPG, PNG, etc.)</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle me-1"></i>Subir archivo
-                    </button>
-                </div>
-            </form>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>Subir archivo
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
+}
 
 @section Scripts {
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const inputArchivo = document.getElementById('inputArchivo');
-            const selectTipo = document.getElementById('selectTipoArchivo');
-            const modalElement = document.getElementById('subirArchivoModal');
+    @if (!esConcluida)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const inputArchivo = document.getElementById('inputArchivo');
+                const selectTipo = document.getElementById('selectTipoArchivo');
+                const modalElement = document.getElementById('subirArchivoModal');
 
-            if (inputArchivo && selectTipo) {
-
-                inputArchivo.addEventListener('change', function () {
-                    if (this.files && this.files.length > 0) {
-                        const fileName = this.files[0].name.toLowerCase();
-
-                        if (fileName.match(/\.(jpg|jpeg|png|gif|webp)$/)) {
-                            selectTipo.value = 'foto';
-                        } else {
-                            selectTipo.value = 'documento';
+                if (inputArchivo && selectTipo) {
+                    inputArchivo.addEventListener('change', function () {
+                        if (this.files && this.files.length > 0) {
+                            const fileName = this.files[0].name.toLowerCase();
+                            if (fileName.match(/\.(jpg|jpeg|png|gif|webp)$/)) {
+                                selectTipo.value = 'foto';
+                            } else {
+                                selectTipo.value = 'documento';
+                            }
                         }
-                    }
-                });
-            }
+                    });
+                }
 
-            if (modalElement) {
-                modalElement.addEventListener('hidden.bs.modal', function () {
-                    if (inputArchivo) inputArchivo.value = '';
-                    if (selectTipo) selectTipo.value = 'documento';
-                });
-            }
-        });
-    </script>
+                if (modalElement) {
+                    modalElement.addEventListener('hidden.bs.modal', function () {
+                        if (inputArchivo) inputArchivo.value = '';
+                        if (selectTipo) selectTipo.value = 'documento';
+                    });
+                }
+            });
+        </script>
+    }
 }

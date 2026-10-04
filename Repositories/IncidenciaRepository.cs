@@ -22,7 +22,7 @@ public class IncidenciaRepository : IIncidenciaRepository
         return incidencia.CodigoSeguimiento;
     }
 
-    public Incidencia? GetById(int id) => _db.Incidencias.AsNoTracking().FirstOrDefault(i => i.Id == id); // ✅ OPTIMIZADO: AsNoTracking para lectura
+    public Incidencia? GetById(int id) => _db.Incidencias.AsNoTracking().FirstOrDefault(i => i.Id == id);
 
     public Incidencia? GetByIdWithDetalle(int id) =>
         _db.Incidencias
@@ -47,12 +47,12 @@ public class IncidenciaRepository : IIncidenciaRepository
             .Where(i => i.ObraId == obraId)
             .OrderByDescending(i => i.FechaRegistro)
             .ToList();
-
     public IReadOnlyList<Incidencia> Filtrar(string? estado = null, int? obraId = null, DateTime? desde = null, DateTime? hasta = null)
     {
         IQueryable<Incidencia> q = _db.Incidencias.AsNoTracking()
             .Include(i => i.Obra)
-            .Include(i => i.Evidencias);
+            .Include(i => i.Evidencias)
+            .Include(i => i.Observaciones); // <--- ESTA ES LA LÍNEA CLAVE
 
         if (!string.IsNullOrWhiteSpace(estado)) q = q.Where(i => i.Estado == estado);
         if (obraId.HasValue) q = q.Where(i => i.ObraId == obraId.Value);

@@ -101,27 +101,27 @@ public class SupervisorController : Controller
             return RedirectToAction(nameof(Revisar), new { id });
         }
 
-                var autor = User.Identity?.Name ?? "Supervisor";
-                var error = _incidencias.CambiarEstado(id, nuevoEstado, resultadoRevision, autor);
+        var autor = User.Identity?.Name ?? "Supervisor";
+        var error = _incidencias.CambiarEstado(id, nuevoEstado, resultadoRevision, autor);
 
-                if (error != null)
-                {
-                    TempData["Error"] = error;
-                    return RedirectToAction(nameof(Revisar), new { id });
-                }
+        if (error != null)
+        {
+            TempData["Error"] = error;
+            return RedirectToAction(nameof(Revisar), new { id });
+        }
 
-                await NotificarSeguro(async () =>
-                {
-                    var inc = _incidencias.GetByIdWithDetalle(id);
-                    await _hub.Clients.Group(VigiaHub.GrupoTablero).SendAsync(
-                        "IncidenciaActualizada",
-                        new { id, codigo = inc?.CodigoSeguimiento, estado = IncidenciaEstados.Canonico(nuevoEstado) ?? nuevoEstado, obraNombre = inc?.Obra?.Nombre, mensaje = "Estado actualizado" });
-                });
+        await NotificarSeguro(async () =>
+        {
+            var inc = _incidencias.GetByIdWithDetalle(id);
+            await _hub.Clients.Group(VigiaHub.GrupoTablero).SendAsync(
+                "IncidenciaActualizada",
+                new { id, codigo = inc?.CodigoSeguimiento, estado = IncidenciaEstados.Canonico(nuevoEstado) ?? nuevoEstado, obraNombre = inc?.Obra?.Nombre, mensaje = "Estado actualizado" });
+        });
 
-                var estadoMostrar = IncidenciaEstados.Canonico(nuevoEstado) ?? nuevoEstado.Trim();
-                TempData["Success"] = $"Estado actualizado a «{estadoMostrar}».";
-                return RedirectToAction(nameof(Revisar), new { id });
-            }
+        var estadoMostrar = IncidenciaEstados.Canonico(nuevoEstado) ?? nuevoEstado.Trim();
+        TempData["Success"] = $"Estado actualizado a «{estadoMostrar}».";
+        return RedirectToAction(nameof(Revisar), new { id });
+    }
 
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> EmitirResultado(int id, string? resultadoFinal, string? resultadoRevision)
@@ -140,7 +140,6 @@ public class SupervisorController : Controller
         }
 
         var destino = IncidenciaEstados.Canonico(resultadoFinal)!;
-        
         return await CambiarEstado(id, destino, resultadoRevision);
     }
 
@@ -208,14 +207,6 @@ public class SupervisorController : Controller
 
         _incidencias.RegistrarEvidencia(id, $"/uploads/incidencias/{id}/{nombreUnico}", archivo.FileName);
         TempData["Success"] = "Evidencia agregada al detalle correctamente.";
-        return RedirectToAction(nameof(Revisar), new { id });
-    }
-
-    [HttpPost, ValidateAntiForgeryToken]
-    public IActionResult EliminarEvidencia(int id, int evidenciaId)
-    {
-        var ok = _incidencias.EliminarEvidencia(evidenciaId);
-        TempData[ok ? "Success" : "Error"] = ok ? "Evidencia eliminada." : "No se pudo eliminar la evidencia.";
         return RedirectToAction(nameof(Revisar), new { id });
     }
 

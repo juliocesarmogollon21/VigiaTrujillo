@@ -44,3 +44,25 @@ a:hover {
   white-space: nowrap;
   line-height: 60px;
 }
+
+.vt-page-header .vt-eyebrow {
+  color: #1e3a8a !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+[data-theme="dark"] .vt-page-header .vt-eyebrow {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .vt-page-header h1 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .vt-page-header .vt-subtitle {
+  color: #cbd5e1 !important;
+}

@@ -1,6 +1,7 @@
 @model VigiaTrujillo.ViewModels.ObraFormViewModel
 @{
     ViewData["Title"] = "Editar Obra";
+    bool esConcluida = Model.Estado == "Concluida";
 }
 
 <div class="row justify-content-center">
@@ -11,10 +12,19 @@
             <p class="vt-subtitle">Está modificando los datos de una obra existente. Los cambios se reflejarán en el portal público una vez guardados.</p>
         </div>
 
-        <div class="alert alert-info mb-4" role="alert">
-            <strong>Nota:</strong> si modifica el <strong>Estado</strong> o el <strong>Avance físico</strong>,
-            deberá proporcionar una justificación del cambio para mantener la trazabilidad del sistema.
-        </div>
+        @if (esConcluida)
+        {
+            <div class="alert alert-danger mb-4" role="alert">
+                <strong><i class="bi bi-lock-fill me-1"></i> Registro Cerrado:</strong> No es posible editar una obra que ya se encuentra en estado "Concluida". Los registros finales son inmutables para garantizar la trazabilidad.
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info mb-4" role="alert">
+                <strong>Nota:</strong> si modifica el <strong>Estado</strong> o el <strong>Avance físico</strong>,
+                deberá proporcionar una justificación del cambio para mantener la trazabilidad del sistema.
+            </div>
+        }
 
         <div class="card">
             <div class="card-body">
@@ -28,30 +38,24 @@
                     <h2 class="h6 mb-3 pb-2 border-bottom">Información general</h2>
                     <div class="row g-3 mb-4">
                         <div class="col-md-8">
-                            <label asp-for="Nombre" class="form-label">
-                                Nombre / Componente <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="Nombre" class="form-control" />
+                            <label asp-for="Nombre" class="form-label">Nombre / Componente <span class="text-danger">*</span></label>
+                            <input asp-for="Nombre" class="form-control" @@(esConcluida ? "disabled" : "") />
                             <span asp-validation-for="Nombre" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4">
-                            <label asp-for="Cui" class="form-label">
-                                CUI <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="Cui" class="form-control" />
+                            <label asp-for="Cui" class="form-label">CUI <span class="text-danger">*</span></label>
+                            <input asp-for="Cui" class="form-control" @@(esConcluida ? "disabled" : "") />
                             <div class="form-text">Código Único de Inversión (debe ser único).</div>
                             <span asp-validation-for="Cui" class="text-danger small"></span>
                         </div>
                         <div class="col-12">
-                            <label asp-for="Ubicacion" class="form-label">
-                                Ubicación <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="Ubicacion" class="form-control" />
+                            <label asp-for="Ubicacion" class="form-label">Ubicación <span class="text-danger">*</span></label>
+                            <input asp-for="Ubicacion" class="form-control" @@(esConcluida ? "disabled" : "") />
                             <span asp-validation-for="Ubicacion" class="text-danger small"></span>
                         </div>
                         <div class="col-12">
                             <label asp-for="Contratista" class="form-label">Contratista</label>
-                            <input asp-for="Contratista" class="form-control" />
+                            <input asp-for="Contratista" class="form-control" @@(esConcluida ? "disabled" : "") />
                             <span asp-validation-for="Contratista" class="text-danger small"></span>
                         </div>
                     </div>
@@ -59,17 +63,13 @@
                     <h2 class="h6 mb-3 pb-2 border-bottom">Plazo de ejecución</h2>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label asp-for="FechaInicio" class="form-label">
-                                Fecha de inicio <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="FechaInicio" class="form-control" type="date" />
+                            <label asp-for="FechaInicio" class="form-label">Fecha de inicio <span class="text-danger">*</span></label>
+                            <input asp-for="FechaInicio" class="form-control" type="date" @@(esConcluida ? "disabled" : "") />
                             <span asp-validation-for="FechaInicio" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="FechaFin" class="form-label">
-                                Fecha de fin <span class="text-danger">*</span>
-                            </label>
-                            <input asp-for="FechaFin" class="form-control" type="date" />
+                            <label asp-for="FechaFin" class="form-label">Fecha de fin <span class="text-danger">*</span></label>
+                            <input asp-for="FechaFin" class="form-control" type="date" @@(esConcluida ? "disabled" : "") />
                             <div class="form-text">Debe ser igual o posterior a la fecha de inicio.</div>
                             <span asp-validation-for="FechaFin" class="text-danger small"></span>
                         </div>
@@ -78,19 +78,15 @@
                     <h2 class="h6 mb-3 pb-2 border-bottom">Estado y datos financieros</h2>
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
-                            <label asp-for="Estado" class="form-label">
-                                Estado actual <span class="text-danger">*</span>
-                            </label>
-                            <select asp-for="Estado" class="form-select" asp-items="Model.Estados" id="selectEstado"></select>
+                            <label asp-for="Estado" class="form-label">Estado actual <span class="text-danger">*</span></label>
+                            <select asp-for="Estado" class="form-select" asp-items="Model.Estados" id="selectEstado" @@(esConcluida ? "disabled" : "")></select>
                             <span asp-validation-for="Estado" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4">
-                            <label asp-for="Presupuesto" class="form-label">
-                                Presupuesto (S/) <span class="text-danger">*</span>
-                            </label>
+                            <label asp-for="Presupuesto" class="form-label">Presupuesto (S/) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">S/</span>
-                                <input asp-for="Presupuesto" class="form-control" type="number" min="1" step="0.01" inputmode="decimal" />
+                                <input asp-for="Presupuesto" class="form-control" type="number" min="1" step="0.01" inputmode="decimal" @@(esConcluida ? "disabled" : "") />
                             </div>
                             <div class="form-text">Monto adjudicado oficial.</div>
                             <span asp-validation-for="Presupuesto" class="text-danger small"></span>
@@ -98,7 +94,7 @@
                         <div class="col-md-4">
                             <label asp-for="AvanceFisico" class="form-label">Avance físico (%)</label>
                             <div class="input-group">
-                                <input asp-for="AvanceFisico" class="form-control" type="number" min="0" max="100" step="0.01" inputmode="decimal" id="inputAvance" />
+                                <input asp-for="AvanceFisico" class="form-control" type="number" min="0" max="100" step="0.01" inputmode="decimal" id="inputAvance" @@(esConcluida ? "disabled" : "") />
                                 <span class="input-group-text">%</span>
                             </div>
                             <div class="form-text">Porcentaje de ejecución verificado.</div>
@@ -106,41 +102,40 @@
                         </div>
                     </div>
 
-                    <div id="seccionJustificacion" class="mb-4" style="display: none;">
-                        <h2 class="h6 mb-3 pb-2 border-bottom">Justificación de cambios críticos</h2>
-                        <div class="alert alert-warning mb-3">
-                            Ha modificado campos críticos que requieren justificación para mantener la trazabilidad del sistema.
-                        </div>
+                    @if (!esConcluida)
+                    {
+                        <div id="seccionJustificacion" class="mb-4" style="display: none;">
+                            <h2 class="h6 mb-3 pb-2 border-bottom">Justificación de cambios críticos</h2>
+                            <div class="alert alert-warning mb-3">
+                                Ha modificado campos críticos que requieren justificación para mantener la trazabilidad del sistema.
+                            </div>
 
-                        <div id="campoJustificacionEstado" class="mb-3" style="display: none;">
-                            <label for="motivoCambioEstado" class="form-label">
-                                Motivo del cambio de estado <span class="text-danger">*</span>
-                            </label>
-                            <textarea id="motivoCambioEstado" name="MotivoCambioEstado" class="form-control" rows="3"
-                                      placeholder="Ejemplo: Se cambia a 'Paralizada' debido a retrasos en la entrega de materiales por parte del proveedor..."></textarea>
-                            <div class="form-text">Explique por qué se está cambiando el estado de la obra.</div>
-                        </div>
+                            <div id="campoJustificacionEstado" class="mb-3" style="display: none;">
+                                <label for="motivoCambioEstado" class="form-label">Motivo del cambio de estado <span class="text-danger">*</span></label>
+                                <textarea id="motivoCambioEstado" name="MotivoCambioEstado" class="form-control" rows="3"
+                                          placeholder="Ejemplo: Se cambia a 'Paralizada' debido a retrasos en la entrega de materiales..."></textarea>
+                                <div class="form-text">Explique por qué se está cambiando el estado de la obra.</div>
+                            </div>
 
-                        <div id="campoJustificacionAvance" class="mb-3" style="display: none;">
-                            <label for="motivoCambioAvance" class="form-label">
-                                Justificación del cambio de avance <span class="text-danger">*</span>
-                            </label>
-                            <textarea id="motivoCambioAvance" name="MotivoCambioAvance" class="form-control" rows="3"
-                                      placeholder="Ejemplo: El avance se actualiza al 65% tras la verificación en sitio del 28/09/2026..."></textarea>
-                            <div class="form-text">Explique por qué se está modificando el porcentaje de avance.</div>
+                            <div id="campoJustificacionAvance" class="mb-3" style="display: none;">
+                                <label for="motivoCambioAvance" class="form-label">Justificación del cambio de avance <span class="text-danger">*</span></label>
+                                <textarea id="motivoCambioAvance" name="MotivoCambioAvance" class="form-control" rows="3"
+                                          placeholder="Ejemplo: El avance se actualiza al 65% tras la verificación en sitio..."></textarea>
+                                <div class="form-text">Explique por qué se está modificando el porcentaje de avance.</div>
+                            </div>
                         </div>
-                    </div>
+                    }
 
                     <h2 class="h6 mb-3 pb-2 border-bottom">Clasificación</h2>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label asp-for="Zona" class="form-label">Zona</label>
-                            <input asp-for="Zona" class="form-control" />
+                            <input asp-for="Zona" class="form-control" @@(esConcluida ? "disabled" : "") />
                             <span asp-validation-for="Zona" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="Categoria" class="form-label">Categoría</label>
-                            <input asp-for="Categoria" class="form-control" />
+                            <input asp-for="Categoria" class="form-control" @@(esConcluida ? "disabled" : "") />
                             <span asp-validation-for="Categoria" class="text-danger small"></span>
                         </div>
                     </div>
@@ -153,9 +148,12 @@
                         </a>
                         <div class="d-flex gap-2 order-1 order-md-2">
                             <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle me-1"></i>Guardar cambios
-                            </button>
+                            @if (!esConcluida)
+                            {
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle me-1"></i>Guardar cambios
+                                </button>
+                            }
                         </div>
                     </div>
                 </form>
@@ -167,76 +165,79 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const selectEstado = document.getElementById('selectEstado');
-            const inputAvance = document.getElementById('inputAvance');
-            const estadoOriginal = document.getElementById('estadoOriginal').value;
-            const avanceOriginal = parseFloat(document.getElementById('avanceOriginal').value) || 0;
+    @if (!esConcluida)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const selectEstado = document.getElementById('selectEstado');
+                const inputAvance = document.getElementById('inputAvance');
+                const estadoOriginal = document.getElementById('estadoOriginal').value;
+                const avanceOriginal = parseFloat(document.getElementById('avanceOriginal').value) || 0;
 
-            const seccionJustificacion = document.getElementById('seccionJustificacion');
-            const campoJustificacionEstado = document.getElementById('campoJustificacionEstado');
-            const campoJustificacionAvance = document.getElementById('campoJustificacionAvance');
+                const seccionJustificacion = document.getElementById('seccionJustificacion');
+                const campoJustificacionEstado = document.getElementById('campoJustificacionEstado');
+                const campoJustificacionAvance = document.getElementById('campoJustificacionAvance');
 
-            const motivoCambioEstado = document.getElementById('motivoCambioEstado');
-            const motivoCambioAvance = document.getElementById('motivoCambioAvance');
+                const motivoCambioEstado = document.getElementById('motivoCambioEstado');
+                const motivoCambioAvance = document.getElementById('motivoCambioAvance');
 
-            function verificarCambios() {
-                const estadoActual = selectEstado.value;
-                const avanceActual = parseFloat(inputAvance.value) || 0;
+                function verificarCambios() {
+                    const estadoActual = selectEstado.value;
+                    const avanceActual = parseFloat(inputAvance.value) || 0;
 
-                const cambioEstado = estadoActual !== estadoOriginal;
-                const cambioAvance = avanceActual !== avanceOriginal;
+                    const cambioEstado = estadoActual !== estadoOriginal;
+                    const cambioAvance = avanceActual !== avanceOriginal;
 
-                if (cambioEstado || cambioAvance) {
-                    seccionJustificacion.style.display = 'block';
-                } else {
-                    seccionJustificacion.style.display = 'none';
+                    if (cambioEstado || cambioAvance) {
+                        seccionJustificacion.style.display = 'block';
+                    } else {
+                        seccionJustificacion.style.display = 'none';
+                    }
+
+                    if (cambioEstado) {
+                        campoJustificacionEstado.style.display = 'block';
+                        motivoCambioEstado.setAttribute('required', 'required');
+                    } else {
+                        campoJustificacionEstado.style.display = 'none';
+                        motivoCambioEstado.removeAttribute('required');
+                        motivoCambioEstado.value = '';
+                    }
+
+                    if (cambioAvance) {
+                        campoJustificacionAvance.style.display = 'block';
+                        motivoCambioAvance.setAttribute('required', 'required');
+                    } else {
+                        campoJustificacionAvance.style.display = 'none';
+                        motivoCambioAvance.removeAttribute('required');
+                        motivoCambioAvance.value = '';
+                    }
                 }
 
-                if (cambioEstado) {
-                    campoJustificacionEstado.style.display = 'block';
-                    motivoCambioEstado.setAttribute('required', 'required');
-                } else {
-                    campoJustificacionEstado.style.display = 'none';
-                    motivoCambioEstado.removeAttribute('required');
-                    motivoCambioEstado.value = '';
-                }
+                selectEstado.addEventListener('change', verificarCambios);
+                inputAvance.addEventListener('input', verificarCambios);
 
-                if (cambioAvance) {
-                    campoJustificacionAvance.style.display = 'block';
-                    motivoCambioAvance.setAttribute('required', 'required');
-                } else {
-                    campoJustificacionAvance.style.display = 'none';
-                    motivoCambioAvance.removeAttribute('required');
-                    motivoCambioAvance.value = '';
-                }
-            }
+                document.getElementById('formEditarObra').addEventListener('submit', function(e) {
+                    const estadoActual = selectEstado.value;
+                    const avanceActual = parseFloat(inputAvance.value) || 0;
 
-            selectEstado.addEventListener('change', verificarCambios);
-            inputAvance.addEventListener('input', verificarCambios);
+                    const cambioEstado = estadoActual !== estadoOriginal;
+                    const cambioAvance = avanceActual !== avanceOriginal;
 
-            document.getElementById('formEditarObra').addEventListener('submit', function(e) {
-                const estadoActual = selectEstado.value;
-                const avanceActual = parseFloat(inputAvance.value) || 0;
+                    if (cambioEstado && !motivoCambioEstado.value.trim()) {
+                        e.preventDefault();
+                        alert('Debe proporcionar el motivo del cambio de estado.');
+                        motivoCambioEstado.focus();
+                        return false;
+                    }
 
-                const cambioEstado = estadoActual !== estadoOriginal;
-                const cambioAvance = avanceActual !== avanceOriginal;
-
-                if (cambioEstado && !motivoCambioEstado.value.trim()) {
-                    e.preventDefault();
-                    alert('Debe proporcionar el motivo del cambio de estado.');
-                    motivoCambioEstado.focus();
-                    return false;
-                }
-
-                if (cambioAvance && !motivoCambioAvance.value.trim()) {
-                    e.preventDefault();
-                    alert('Debe proporcionar la justificación del cambio de avance.');
-                    motivoCambioAvance.focus();
-                    return false;
-                }
+                    if (cambioAvance && !motivoCambioAvance.value.trim()) {
+                        e.preventDefault();
+                        alert('Debe proporcionar la justificación del cambio de avance.');
+                        motivoCambioAvance.focus();
+                        return false;
+                    }
+                });
             });
-        });
-    </script>
+        </script>
+    }
 }

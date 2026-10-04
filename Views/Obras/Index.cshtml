@@ -163,6 +163,7 @@
                                                 data-incidencia-id="@item.IncidenciaIdPendiente"
                                                 data-obra-id="@item.Id"
                                                 data-codigo="@item.CodigoIncidenciaPendiente"
+                                                data-texto-solicitud="@item.TextoSolicitudPendiente"
                                                 title="Responder solicitud del supervisor">
                                             <i class="bi bi-chat-left-text"></i>
                                         </button>
@@ -206,6 +207,7 @@
     </a>
 </div>
 
+<!-- ✅ MODAL ACTUALIZADO CON EL TEXTO DE LA SOLICITUD -->
 <div class="modal fade" id="modalResponderIndex" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -223,9 +225,17 @@
                         <div class="form-control-plaintext fw-semibold vt-code" id="modalIndexCodigoIncidencia"></div>
                     </div>
 
+                    <!-- ✅ NUEVO: Bloque para mostrar qué pidió el supervisor -->
+                    <div class="alert alert-info border-0 bg-primary bg-opacity-10 mb-3">
+                        <h6 class="alert-heading fw-bold text-primary mb-2">
+                            <i class="bi bi-chat-left-quote me-1"></i> Solicitud del Supervisor:
+                        </h6>
+                        <p class="mb-0 small" id="modalTextoSolicitud" style="white-space: pre-wrap;"></p>
+                    </div>
+
                     <div class="mb-3">
                         <label for="respuestaTextoIndex" class="form-label">
-                            Respuesta oficial <span class="text-danger">*</span>
+                            Tu respuesta oficial <span class="text-danger">*</span>
                         </label>
                         <textarea class="form-control" id="respuestaTextoIndex" name="Respuesta" rows="4" required minlength="10"
                                   placeholder="Ejemplo: Se adjunta el acta de entrega de materiales N° 2026-045 emitida por el almacén central..."></textarea>
@@ -262,10 +272,12 @@
                     var incidenciaId = button.getAttribute('data-incidencia-id');
                     var obraId = button.getAttribute('data-obra-id');
                     var codigo = button.getAttribute('data-codigo');
+                    var textoSolicitud = button.getAttribute('data-texto-solicitud'); 
 
                     document.getElementById('modalIndexIncidenciaId').value = incidenciaId;
                     document.getElementById('modalIndexObraId').value = obraId;
                     document.getElementById('modalIndexCodigoIncidencia').textContent = "#" + codigo;
+                    document.getElementById('modalTextoSolicitud').textContent = textoSolicitud || "No se encontraron detalles de la solicitud.";
                 });
             }
         });
