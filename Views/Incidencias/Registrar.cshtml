@@ -55,12 +55,28 @@
                     <label asp-for="Descripcion" class="form-label">Descripci&oacute;n de lo observado</label>
                     <textarea asp-for="Descripcion" id="descripcionInput" class="form-control" rows="6" required
                               maxlength="1000"
-                              placeholder="Ejemplo: Maquinaria pesada detenida por m&aacute;s de 15 d&iacute;as sin personal trabajando en la obra. Tambi&eacute;n se observaron materiales de construcci&oacute;n abandonados a la intemperie."></textarea>
+                              placeholder="Maquinaria pesada detenida por m&aacute;s de 15 d&iacute;as sin personal trabajando en la obra. Tambi&eacute;n se observaron materiales de construcci&oacute;n abandonados a la intemperie."></textarea>
                     <div class="d-flex justify-content-between align-items-center mt-2">
                         <span class="form-text mb-0">M&iacute;nimo 20 caracteres requeridos</span>
                         <span id="charCounter" class="vt-badge-neutral">0 / 1000 caracteres</span>
                     </div>
-                    <span asp-validation-for="Descripcion" class="text-danger small d-block mt-1"></span>
+                    @{
+                        var erroresDescripcion = ViewData.ModelState["Descripcion"]?.Errors;
+                    }
+                    @if (erroresDescripcion != null && erroresDescripcion.Count > 1)
+                    {
+                        <ul class="text-danger small mt-1 mb-0 ps-3" id="erroresDescripcion">
+                            @foreach (var err in erroresDescripcion)
+                            {
+                                <li>@err.ErrorMessage</li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span asp-validation-for="Descripcion" class="text-danger small d-block mt-1"></span>
+                    }
+                    <div class="form-text">Escribe con respeto y sin repetir palabras. No se aceptan insultos, groserías, publicidad ni texto de relleno.</div>
                 </div>
             </div>
 
@@ -257,11 +273,31 @@
                 procesarArchivos(nuevosArchivos);
             });
 
+            // Revisión rápida en el navegador. La validación completa (incluidas las
+            // palabras no permitidas) se hace en el servidor con FiltroContenidoService.
+            function revisarTexto(texto) {
+                const minus = texto.toLowerCase();
+                if (/(\p{L})\1{3,}/u.test(minus)) return 'Evita repetir la misma letra muchas veces (como "aaaa").';
+                if (/([^\p{L}\p{N}\s])\1{3,}/u.test(minus)) return 'Evita repetir signos como "!!!!" o "????".';
+                const palabras = minus.match(/\p{L}{2,}/gu) || [];
+                for (let i = 1; i < palabras.length; i++) {
+                    if (palabras[i] === palabras[i - 1]) return 'La palabra "' + palabras[i] + '" está repetida seguida.';
+                }
+                return null;
+            }
+
             form.addEventListener('submit', function (e) {
                 const descripcion = descripcionInput.value.trim();
                 if (descripcion.length < 20) {
                     e.preventDefault();
                     mostrarAdvertencia('La descripción debe tener al menos 20 caracteres.');
+                    descripcionInput.focus();
+                    return false;
+                }
+                const problema = revisarTexto(descripcion);
+                if (problema) {
+                    e.preventDefault();
+                    mostrarAdvertencia(problema);
                     descripcionInput.focus();
                     return false;
                 }

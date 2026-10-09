@@ -50,8 +50,7 @@ public class ObrasController : Controller
         ViewBag.Paralizadas = obras.Count(o => o.Estado == "Paralizada");
         ViewBag.Sobrecosto = obras.Count(o => o.Estado == "Con Sobrecosto");
  
-        var incidenciasPendientes = _incidenciaService.Filtrar(estado: "Información solicitada");
-        ViewBag.SolicitudesPendientes = incidenciasPendientes.Count;
+        ViewBag.SolicitudesPendientes = _incidenciaService.ContarSolicitudesPendientes();
         
         ViewBag.Categorias = obras
             .Where(o => !string.IsNullOrEmpty(o.Categoria))
@@ -75,10 +74,11 @@ public class ObrasController : Controller
     {
         var obras = _obraService.GetAll(busqueda, estado);
         
-        var incidenciasPendientes = _incidenciaService.Filtrar(estado: "Información solicitada");
-        var dictPendientes = incidenciasPendientes
-            .GroupBy(i => i.ObraId)
-            .ToDictionary(g => g.Key, g => g.First()); 
+        // Solicitudes del Supervisor que siguen sin respuesta, agrupadas por obra.
+        var dictPendientes = _incidenciaService.GetSolicitudesPendientes()
+            .Where(sol => sol.Incidencia != null)
+            .GroupBy(sol => sol.Incidencia!.ObraId)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
         if (conSolicitudes)
         {
@@ -93,11 +93,8 @@ public class ObrasController : Controller
             ConSolicitudes = conSolicitudes,
             Obras = obras.Select(o => 
             {
-                var incPendiente = dictPendientes.ContainsKey(o.Id) ? dictPendientes[o.Id] : null;
-
-                var textoSolicitud = incPendiente?.Observaciones?
-                    .OrderByDescending(obs => obs.Fecha)
-                    .FirstOrDefault()?.Texto ?? "Sin detalles de la solicitud.";
+                var pendientesObra = dictPendientes.TryGetValue(o.Id, out var sp) ? sp : new List<SolicitudInformacion>();
+                var solPendiente = pendientesObra.FirstOrDefault();
 
                 return new ObraListItemViewModel
                 {
@@ -110,10 +107,12 @@ public class ObrasController : Controller
                     FechaFin = o.FechaFin,
                     AvanceFisico = o.AvanceFisico,
                     
-                    TieneSolicitudPendiente = incPendiente != null,
-                    IncidenciaIdPendiente = incPendiente?.Id,
-                    CodigoIncidenciaPendiente = incPendiente?.CodigoSeguimiento,
-                    TextoSolicitudPendiente = textoSolicitud
+                    TieneSolicitudPendiente = solPendiente != null,
+                    SolicitudIdPendiente = solPendiente?.Id,
+                    CantidadSolicitudesPendientes = pendientesObra.Count,
+                    IncidenciaIdPendiente = solPendiente?.IncidenciaId,
+                    CodigoIncidenciaPendiente = solPendiente?.Incidencia?.CodigoSeguimiento,
+                    TextoSolicitudPendiente = solPendiente?.Pregunta
                 };
             }).ToList()
         };
@@ -272,20 +271,40 @@ public class ObrasController : Controller
             return RedirectToAction(nameof(Details), new { id });
         }
         
+        if (obraExistente == null)
+        {
+            TempData["Error"] = "La obra solicitada no existe.";
+            return RedirectToAction(nameof(Index));
+        }
+
         if (_obraService.ExistsCui(vm.Cui, vm.Id))
         {
             ModelState.AddModelError(nameof(vm.Cui), "Ya existe una obra con este CUI. Debe ser único.");
         }
 
+        // Los cambios de estado o de avance desde el formulario de edición también necesitan su motivo.
+        var cambiaEstado = !ObraEstados.EsIgual(obraExistente.Estado, vm.Estado);
+        var avanceAnterior = obraExistente.AvanceFisico ?? 0;
+        var avanceNuevo = vm.AvanceFisico ?? 0;
+        if (cambiaEstado && string.IsNullOrWhiteSpace(vm.MotivoCambioEstado))
+            ModelState.AddModelError(nameof(vm.MotivoCambioEstado), "Debe indicar el motivo del cambio de estado.");
+        if (avanceNuevo != avanceAnterior && string.IsNullOrWhiteSpace(vm.MotivoCambioAvance))
+            ModelState.AddModelError(nameof(vm.MotivoCambioAvance), "Debe justificar el cambio del avance físico.");
+
         if (!ModelState.IsValid) 
         { 
             vm.Estados = BuildEstados(vm.Estado); 
+            ViewBag.EstadoOriginal = obraExistente.Estado;
+            ViewBag.AvanceOriginal = obraExistente.AvanceFisico;
             return View(vm); 
         }
         
         try
         {
-            var updated = _obraService.Update(Map(vm));
+            var obraEditada = Map(vm);
+            obraEditada.MotivoCambioEstado = cambiaEstado ? vm.MotivoCambioEstado!.Trim() : obraExistente.MotivoCambioEstado;
+            obraEditada.MotivoRetroceso = avanceNuevo < avanceAnterior ? vm.MotivoCambioAvance!.Trim() : obraExistente.MotivoRetroceso;
+            var updated = _obraService.Update(obraEditada);
             if (updated == null) 
             { 
                 TempData["Error"] = "La obra solicitada no existe."; 
@@ -524,86 +543,6 @@ public class ObrasController : Controller
         }));
         
         return RedirectToAction(nameof(Details), new { id });
-    }
-
-    [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> ResponderSolicitud(
-        int incidenciaId, 
-        int obraId, 
-        string respuesta, 
-        IFormFile? archivoSustento)
-    {
-        if (string.IsNullOrWhiteSpace(respuesta) || respuesta.Length < 10)
-        {
-            TempData["Error"] = "La respuesta debe tener al menos 10 caracteres.";
-            return RedirectToAction("Details", new { id = obraId });
-        }
-
-        var incidencia = _incidenciaService.GetByIdWithDetalle(incidenciaId);
-
-        if (incidencia == null || incidencia.ObraId != obraId)
-        {
-            TempData["Error"] = "La incidencia no existe o no pertenece a esta obra.";
-            return RedirectToAction("Details", new { id = obraId });
-        }
-
-        if (incidencia.Estado != "Información solicitada")
-        {
-            TempData["Error"] = "Esta incidencia ya no requiere información adicional.";
-            return RedirectToAction("Details", new { id = obraId });
-        }
-
-        string rutaArchivo = "";
-        if (archivoSustento != null && archivoSustento.Length > 0)
-        {
-            var ext = Path.GetExtension(archivoSustento.FileName).ToLowerInvariant();
-            var permitidas = new[] { ".jpg", ".jpeg", ".png", ".pdf", ".doc", ".docx" };
-            
-            if (!permitidas.Contains(ext))
-            {
-                TempData["Error"] = "Formato de archivo no permitido. Use JPG, PNG, PDF o DOC.";
-                return RedirectToAction("Details", new { id = obraId });
-            }
-            
-            if (archivoSustento.Length > 10 * 1024 * 1024)
-            {
-                TempData["Error"] = "El archivo excede el tamaño máximo (10 MB).";
-                return RedirectToAction("Details", new { id = obraId });
-            }
-
-            var carpeta = Path.Combine(_env.WebRootPath, "uploads", "respuestas-solicitud");
-            Directory.CreateDirectory(carpeta);
-            var nombreUnico = $"resp-{incidenciaId}-{Guid.NewGuid()}{ext}";
-            
-            using (var stream = new FileStream(Path.Combine(carpeta, nombreUnico), FileMode.Create))
-            {
-                await archivoSustento.CopyToAsync(stream);
-            }
-            
-            rutaArchivo = $"/uploads/respuestas-solicitud/{nombreUnico}";
-        }
-        
-        var textoObservacion = respuesta.Trim();
-        if (!string.IsNullOrEmpty(rutaArchivo))
-        {
-            textoObservacion += $"\n\n📎 Archivo adjunto: {archivoSustento!.FileName} ({rutaArchivo})";
-        }
-
-        _incidenciaService.AgregarObservacion(
-            incidenciaId, 
-            textoObservacion, 
-            User.Identity?.Name ?? "Personal Municipal"
-        );
-
-        TempData["Success"] = "Respuesta registrada correctamente. El Supervisor ha sido notificado.";
-
-        await NotificarSeguro(() => _hub.Clients.Group(VigiaHub.GrupoSupervisores).SendAsync("ObservacionAgregada", new 
-        { 
-            codigo = incidencia.CodigoSeguimiento,
-            mensaje = "El Personal Municipal ha respondido a su solicitud de información"
-        }));
-
-        return RedirectToAction("Details", new { id = obraId });
     }
 
     private static Obra Map(ObraFormViewModel vm) => new()

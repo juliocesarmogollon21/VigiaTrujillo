@@ -10,20 +10,16 @@ public class ResueltaStrategy : IIncidenciaEstadoStrategy
     {
         if (IncidenciaEstados.EsCerrada(incidencia.Estado))
             return "La incidencia ya está cerrada.";
+        if (!IncidenciaEstados.EsIgual(incidencia.Estado, IncidenciaEstados.EnVerificacion))
+            return "Para marcar la incidencia como 'Resuelta' primero debe pasar por 'En verificación' (comprobar en campo que el problema se corrigió).";
         if (!IncidenciaEstados.TransicionPermitida(incidencia.Estado, EstadoDestino))
             return $"No se puede pasar de '{incidencia.Estado}' a '{EstadoDestino}'.";
         if (string.IsNullOrWhiteSpace(resultadoRevision) && string.IsNullOrWhiteSpace(incidencia.ResultadoRevision))
             return "Debe indicar el resultado de la revisión antes de marcar como Resuelta.";
-        if (incidencia.Observaciones == null || !incidencia.Observaciones.Any())
+        // El sustento que se escribe al cerrar también cuenta como observación del historial.
+        if ((incidencia.Observaciones == null || !incidencia.Observaciones.Any()) && string.IsNullOrWhiteSpace(resultadoRevision))
             return "Debe registrar al menos una observación antes de resolver.";
-        
-        if (IncidenciaEstados.EsIgual(incidencia.Estado, IncidenciaEstados.PendienteDeRevision))
-        {
-            var textoCompleto = resultadoRevision ?? incidencia.ResultadoRevision ?? "";
-            if (textoCompleto.Trim().Length < 100)
-                return "Al resolver directamente desde 'Pendiente de revisión', debe proporcionar una justificación detallada (mínimo 100 caracteres) explicando por qué no se requirió revisión intermedia.";
-        }
-        
+
         return null;
     }
 

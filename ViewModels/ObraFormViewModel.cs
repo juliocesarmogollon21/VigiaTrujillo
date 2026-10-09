@@ -53,6 +53,12 @@ public class ObraFormViewModel : IValidatableObject
     [Display(Name = "Categoría"), StringLength(100)]
     public string? Categoria { get; set; }
 
+    [Display(Name = "Motivo del cambio de estado"), StringLength(500)]
+    public string? MotivoCambioEstado { get; set; }
+
+    [Display(Name = "Justificación del cambio de avance"), StringLength(500)]
+    public string? MotivoCambioAvance { get; set; }
+
     public IEnumerable<SelectListItem> Estados { get; set; } = Array.Empty<SelectListItem>();
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

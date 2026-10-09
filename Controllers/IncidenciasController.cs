@@ -15,22 +15,26 @@ public class IncidenciasController : Controller
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<IncidenciasController> _logger;
     private readonly IHubContext<VigiaHub> _hub;
+    private readonly IFiltroContenidoService _filtro;
 
     private static readonly string[] ExtensionesPermitidas = { ".jpg", ".jpeg", ".png", ".pdf" };
     private const long TamanoMaximoBytes = 5 * 1024 * 1024;
+    private const int MaximoArchivos = 3;
 
     public IncidenciasController(
         IIncidenciaService incidenciaService,
         IObraService obraService,
         IWebHostEnvironment env,
         ILogger<IncidenciasController> logger,
-        IHubContext<VigiaHub> hub)
+        IHubContext<VigiaHub> hub,
+        IFiltroContenidoService filtro)
     {
         _incidenciaService = incidenciaService;
         _obraService = obraService;
         _env = env;
         _logger = logger;
         _hub = hub;
+        _filtro = filtro;
     }
 
     [HttpGet, AllowAnonymous]
@@ -39,42 +43,42 @@ public class IncidenciasController : Controller
         var vm = new IncidenciaFormViewModel
         {
             ObraId = obraId ?? 0,
-            ObrasDisponibles = _obraService.GetAll().Where(o => o.Activo).ToList()
+            ObrasDisponibles = ObrasActivas()
         };
         return View(vm);
     }
 
+    private List<Obra> ObrasActivas() => _obraService.GetAll().Where(o => o.Activo).ToList();
+
     [HttpPost, ValidateAntiForgeryToken, AllowAnonymous]
     public async Task<IActionResult> Registrar(IncidenciaFormViewModel vm)
     {
-        if (!ModelState.IsValid)
+        // La obra debe existir y seguir activa (no dada de baja).
+        var obraSeleccionada = vm.ObraId > 0 ? _obraService.GetById(vm.ObraId) : null;
+        if (vm.ObraId > 0 && (obraSeleccionada == null || !obraSeleccionada.Activo))
+            ModelState.AddModelError(nameof(vm.ObraId), "La obra seleccionada no existe o ya no está disponible.");
+
+        // Filtro de contenido: palabras no permitidas, palabras repetidas y relleno de caracteres.
+        foreach (var problema in _filtro.Validar(vm.Descripcion, "La descripción"))
+            ModelState.AddModelError(nameof(vm.Descripcion), problema);
+
+        var archivos = vm.Archivos?.Where(a => a != null && a.Length > 0).ToList() ?? new List<IFormFile>();
+        if (archivos.Count > MaximoArchivos)
+            ModelState.AddModelError(nameof(vm.Archivos), $"Solo puedes adjuntar hasta {MaximoArchivos} archivos.");
+
+        foreach (var archivo in archivos)
         {
-            vm.ObrasDisponibles = _obraService.GetAll().ToList();
-            return View(vm);
+            var extension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
+            if (!ExtensionesPermitidas.Contains(extension))
+                ModelState.AddModelError(nameof(vm.Archivos), $"El archivo '{archivo.FileName}' tiene un formato no permitido. Use JPG, PNG o PDF.");
+            else if (archivo.Length > TamanoMaximoBytes)
+                ModelState.AddModelError(nameof(vm.Archivos), $"El archivo '{archivo.FileName}' excede el tamaño máximo de 5 MB.");
         }
 
-        if (vm.Archivos != null && vm.Archivos.Count > 0)
+        if (!ModelState.IsValid)
         {
-            foreach (var archivo in vm.Archivos)
-            {
-                if (archivo.Length == 0) continue;
-
-                var extension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
-                
-                if (!ExtensionesPermitidas.Contains(extension))
-                {
-                    ModelState.AddModelError("Archivos", $"El archivo '{archivo.FileName}' tiene un formato no permitido. Use JPG, PNG o PDF.");
-                    vm.ObrasDisponibles = _obraService.GetAll().ToList();
-                    return View(vm);
-                }
-
-                if (archivo.Length > TamanoMaximoBytes)
-                {
-                    ModelState.AddModelError("Archivos", $"El archivo '{archivo.FileName}' excede el tamaño máximo de 5 MB.");
-                    vm.ObrasDisponibles = _obraService.GetAll().ToList();
-                    return View(vm); 
-                }
-            }
+            vm.ObrasDisponibles = ObrasActivas();
+            return View(vm);
         }
 
         var incidencia = new Incidencia
@@ -91,13 +95,13 @@ public class IncidenciasController : Controller
         catch (InvalidOperationException ex)
         {
             ModelState.AddModelError(string.Empty, ex.Message);
-            vm.ObrasDisponibles = _obraService.GetAll().ToList();
+            vm.ObrasDisponibles = ObrasActivas();
             return View(vm);
         }
 
-        if (vm.Archivos != null && vm.Archivos.Count > 0)
+        if (archivos.Count > 0)
         {
-            GuardarEvidencias(incidencia.Id, vm.Archivos);
+            GuardarEvidencias(incidencia.Id, archivos);
         }
 
         var obra = _obraService.GetById(incidencia.ObraId);
@@ -148,7 +152,7 @@ public class IncidenciasController : Controller
         var carpeta = Path.Combine(_env.WebRootPath, "uploads", "incidencias", incidenciaId.ToString());
         Directory.CreateDirectory(carpeta);
 
-        foreach (var archivo in archivos.Take(3)) 
+        foreach (var archivo in archivos.Take(MaximoArchivos))
         {
             if (archivo.Length == 0) continue;
 

@@ -10,21 +10,17 @@ public class DerivadaStrategy : IIncidenciaEstadoStrategy
     {
         if (IncidenciaEstados.EsCerrada(incidencia.Estado))
             return "La incidencia ya está cerrada.";
+        if (IncidenciaEstados.EsIgual(incidencia.Estado, IncidenciaEstados.PendienteDeRevision))
+            return "Primero pase la incidencia a 'En revisión'; la derivación se decide después de revisar la documentación.";
         if (!IncidenciaEstados.TransicionPermitida(incidencia.Estado, EstadoDestino))
             return $"No se puede pasar de '{incidencia.Estado}' a '{EstadoDestino}'.";
         
         if (string.IsNullOrWhiteSpace(resultadoRevision) && string.IsNullOrWhiteSpace(incidencia.ResultadoRevision))
             return "Para derivar una incidencia (irregularidad confirmada), es obligatorio redactar el sustento documental.";
         
-        if (incidencia.Observaciones == null || !incidencia.Observaciones.Any())
+        // El sustento que se escribe al cerrar también cuenta como observación del historial.
+        if ((incidencia.Observaciones == null || !incidencia.Observaciones.Any()) && string.IsNullOrWhiteSpace(resultadoRevision))
             return "Debe registrar al menos una observación antes de derivar.";
-        
-        if (IncidenciaEstados.EsIgual(incidencia.Estado, IncidenciaEstados.PendienteDeRevision))
-        {
-            var textoCompleto = resultadoRevision ?? incidencia.ResultadoRevision ?? "";
-            if (textoCompleto.Trim().Length < 100)
-                return "Al derivar directamente desde 'Pendiente de revisión', debe proporcionar una justificación detallada (mínimo 100 caracteres) explicando la gravedad de la irregularidad y por qué se requiere escalamiento inmediato.";
-        }
         
         return null;
     }

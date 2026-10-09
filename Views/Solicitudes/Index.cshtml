@@ -1,0 +1,124 @@
+@using VigiaTrujillo.Models
+@{
+    ViewData["Title"] = "Solicitudes del Supervisor";
+    var pendientes = (IReadOnlyList<SolicitudInformacion>)ViewBag.Pendientes;
+    var respondidas = (IReadOnlyList<SolicitudInformacion>)ViewBag.Respondidas;
+    int? obraId = ViewBag.ObraId;
+}
+
+<div class="vt-page-header">
+    <span class="vt-eyebrow">Personal Municipal</span>
+    <h1>Solicitudes de información del Supervisor</h1>
+    <p class="vt-subtitle">
+        Aquí aparecen los pedidos que hace el Supervisor sobre las incidencias de las obras.
+        Al enviar la respuesta, el Supervisor la ve en la revisión de la incidencia y decide el siguiente paso.
+    </p>
+    @if (obraId.HasValue)
+    {
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary mt-2">Ver solicitudes de todas las obras</a>
+    }
+</div>
+
+<h2 class="h5 mb-3">Pendientes de respuesta <span class="badge vt-badge-warning">@pendientes.Count</span></h2>
+
+@if (!pendientes.Any())
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="vt-empty">
+                <i class="bi bi-check-circle text-success"></i>
+                <p class="vt-empty__title">No hay solicitudes pendientes</p>
+                <p class="vt-empty__text">Cuando el Supervisor pida información sobre una incidencia, aparecerá aquí.</p>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    foreach (var sol in pendientes)
+    {
+        var inc = sol.Incidencia!;
+        <div class="card mb-4" id="solicitud-@sol.Id">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span>
+                    Incidencia <span class="vt-code">@inc.CodigoSeguimiento</span>
+                    · @inc.Obra?.Nombre
+                </span>
+                <small class="text-muted">Solicitado por @sol.SolicitadoPor el @sol.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")</small>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <div class="vt-label">Lo que pide el Supervisor</div>
+                        <div class="alert alert-warning" style="white-space: pre-wrap;">@sol.Pregunta</div>
+
+                        <div class="vt-label">Reporte del ciudadano</div>
+                        <p class="small mb-1" style="white-space: pre-wrap;">@inc.Descripcion</p>
+                        <small class="text-muted">
+                            Registrado el @inc.FechaRegistro.ToString("dd/MM/yyyy") · @inc.Evidencias.Count evidencia(s)
+                        </small>
+                    </div>
+                    <div class="col-lg-7">
+                        <form asp-action="Responder" method="post" enctype="multipart/form-data">
+                            <input type="hidden" name="solicitudId" value="@sol.Id" />
+                            <label class="form-label" for="respuesta-@sol.Id">Respuesta <span class="text-danger">*</span></label>
+                            <textarea class="form-control mb-1" id="respuesta-@sol.Id" name="respuesta" rows="5" required minlength="10" maxlength="2000"
+                                      placeholder="Se adjunta el cronograma actualizado de la obra y el acta de entrega de materiales..."></textarea>
+                            <div class="form-text mb-3">Mínimo 10 caracteres. La respuesta queda registrada con tu usuario y la fecha.</div>
+
+                            <label class="form-label" for="archivo-@sol.Id">Documento de sustento (opcional)</label>
+                            <input type="file" class="form-control mb-1" id="archivo-@sol.Id" name="archivoSustento" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" />
+                            <div class="form-text mb-3">JPG, PNG, PDF o DOC. Máximo 10 MB.</div>
+
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-send me-1"></i>Enviar respuesta al Supervisor
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<h2 class="h5 mb-3 mt-2">Respondidas recientemente</h2>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>Incidencia</th>
+                    <th>Pregunta</th>
+                    <th>Respuesta</th>
+                    <th>Respondido por</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!respondidas.Any())
+                {
+                    <tr><td colspan="5" class="text-muted small">Todavía no se ha respondido ninguna solicitud.</td></tr>
+                }
+                @foreach (var sol in respondidas)
+                {
+                    <tr>
+                        <td>
+                            <span class="vt-code">@sol.Incidencia?.CodigoSeguimiento</span>
+                            <div class="small text-muted">@sol.Incidencia?.Obra?.Nombre</div>
+                        </td>
+                        <td class="small" style="max-width: 280px;">@sol.Pregunta</td>
+                        <td class="small" style="max-width: 320px;">
+                            @sol.Respuesta
+                            @if (!string.IsNullOrWhiteSpace(sol.ArchivoRuta))
+                            {
+                                <div><a href="@sol.ArchivoRuta" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> @sol.ArchivoNombre</a></div>
+                            }
+                        </td>
+                        <td class="small">@sol.RespondidoPor</td>
+                        <td class="small vt-figure">@sol.FechaRespuesta?.ToString("dd/MM/yyyy HH:mm")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

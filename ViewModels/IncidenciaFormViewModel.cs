@@ -5,6 +5,7 @@ namespace VigiaTrujillo.ViewModels;
 public class IncidenciaFormViewModel
 {
     [Required(ErrorMessage = "Debes seleccionar una obra.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Debes seleccionar una obra.")]
     [Display(Name = "Obra")]
     public int ObraId { get; set; }
 

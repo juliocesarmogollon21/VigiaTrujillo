@@ -84,6 +84,18 @@
             showToast("Observación", detail, "info");
         });
 
+        connection.on("RespuestaSolicitud", function (data) {
+            var msg = (data && data.mensaje) || "El Personal Municipal respondió una solicitud";
+            var detail = data ? (msg + ": " + (data.codigo || "") + (data.obraNombre ? " - " + data.obraNombre : "")) : msg;
+            showToast("Respuesta recibida", detail, "success");
+        });
+
+        connection.on("NuevaSolicitudInformacion", function (data) {
+            var msg = (data && data.mensaje) || "Nueva solicitud de información";
+            var detail = data ? (msg + ": " + (data.codigo || "") + (data.obraNombre ? " - " + data.obraNombre : "")) : msg;
+            showToast("Solicitud del Supervisor", detail, "warning");
+        });
+
         connection.on("EstadoObraActualizado", function (data) {
             var msg = (data && data.mensaje) || "Estado de obra actualizado";
             var detail = data ? (msg + ": " + (data.nombre || "") + (data.estado ? " [" + data.estado + "]" : "") + (data.avance != null ? " - avance " + data.avance + "%" : "")) : msg;

@@ -23,7 +23,7 @@ Transparencia (revisión y cierre de incidencias), con notificaciones en tiempo 
 - [Patrones de diseño](#patrones-de-diseño)
 - [Requisitos](#requisitos)
 - [Instalación y ejecución](#instalación-y-ejecución)
-- [Credenciales de prueba](#credenciales-de-prueba)
+- [Cuentas de acceso](#cuentas-de-acceso)
 - [Mapa de casos de uso a pantallas](#mapa-de-casos-de-uso-a-pantallas)
 - [Máquina de estados de la incidencia](#máquina-de-estados-de-la-incidencia)
 - [Documentación de apoyo](#documentación-de-apoyo)
@@ -63,7 +63,8 @@ Transparencia (revisión y cierre de incidencias), con notificaciones en tiempo 
 
 - **Bandeja de incidencias** con filtros por estado, obra y rango de fechas.
 - **Comparación de información** (CU-14): datos oficiales de la obra frente al reporte ciudadano,
- con avance físico y presupuesto oficial en paralelo.
+ con avance físico, presupuesto oficial y los archivos publicados de la obra (fotos y PDF) en
+ paralelo con las evidencias del ciudadano.
 - **Solicitud de información adicional** (CU-13) dirigida al Personal Municipal.
 - **Registro de observaciones** (CU-15) que alimentan el historial cronológico.
 - **Cambio de estado** (CU-16) y **emisión de resultado formal** (CU-17) mediante el patrón Strategy,
@@ -163,10 +164,10 @@ correspondiente al estado destino y ejecuta `Validar` y `Aplicar`.
 |---|---|
 | `IIncidenciaEstadoStrategy` | Contrato: `EstadoDestino`, `Validar(...)`, `Aplicar(...)` |
 | `IncidenciaEstadoContext` | Selecciona la estrategia y ejecuta la transición |
-| `PendienteDeRevisionStrategy` | Devuelve el caso a la bandeja de pendientes sin cerrarlo |
+| `PendienteDeRevisionStrategy` | Estado inicial; rechaza cualquier intento de volver a «Pendiente de revisión» |
 | `EnRevisionStrategy` | Pasa a análisis en curso |
 | `InformacionSolicitadaStrategy` | Espera documentación del Personal Municipal |
-| `EnVerificacionStrategy` | Comprobaciones cruzadas en curso |
+| `EnVerificacionStrategy` | Verificación de la información recibida o en campo (desde «Información solicitada» exige que la solicitud ya tenga respuesta) |
 | `ResueltaStrategy` | Cierre por observación subsanada (CU-17) |
 | `DerivadaStrategy` | Cierre por irregularidad confirmada → instancia superior |
 
@@ -231,10 +232,10 @@ dotnet run
 
 ---
 
-## Credenciales de prueba
+## Cuentas de acceso
 
-El Seed crea tres cuentas y **restaura su contraseña en cada arranque**, de modo que siempre
-puedan usarse aunque se hayan modificado:
+El Seed crea tres cuentas para el personal de la municipalidad y **restaura su contraseña en cada
+arranque**, de modo que siempre puedan usarse aunque se hayan modificado:
 
 | Rol | Usuario | Contraseña | Acceso principal |
 |---|---|---|---|
@@ -242,8 +243,11 @@ puedan usarse aunque se hayan modificado:
 | Personal Municipal | `personal.municipal` | `Municipal2026` | `/Obras/Dashboard` — gestión de obras |
 | Administrador | `admin` | `Admin2026` | `/Usuarios` — gestión de usuarios y roles |
 
-> Los módulos de ciudadano (`/Obras/Publico`, `/Incidencias/Registrar`, `/Incidencias/Consultar`)
-> son **públicos y no requieren sesión**.
+> **El ciudadano no tiene cuenta.** Usa el portal público sin iniciar sesión: consulta las obras
+> (`/Obras/Publico`), registra su reporte de forma anónima (`/Incidencias/Registrar`) y sigue su
+> estado con el código de seguimiento (`/Incidencias/Consultar`). Por eso el Administrador solo puede
+> asignar los roles Personal Municipal, Supervisor de Transparencia y Administrador; el sistema
+> rechaza cualquier intento de crear o editar un usuario con el rol «Ciudadano».
 
 ---
 
@@ -300,8 +304,56 @@ que se renderiza y la redirección que ocurre al completar la operación.
 
 ## Máquina de estados de la incidencia
 
-| Estado actual | Estados permitidos |
+Solo el **supervisor** cambia el estado y el flujo **solo avanza**, nunca retrocede:
+
+`Pendiente de revisión → En revisión → Información solicitada → En verificación → Resuelta / Derivada`
+
+| Estado actual | Puede pasar a |
 |---|---|
+| Pendiente de revisión | En revisión (es el estado inicial al registrar el reporte) |
+| En revisión | Información solicitada · En verificación · Derivada |
+| Información solicitada | En verificación (solo cuando la solicitud ya tiene respuesta) · Derivada |
+| En verificación | Información solicitada (pedir más datos) · Resuelta · Derivada |
+| **Resuelta** | Cerrada — sin cambios |
+| **Derivada** | Cerrada — sin cambios |
+
+- Ninguna incidencia vuelve a «Pendiente de revisión» ni a «En revisión».
+- El Personal Municipal **solo responde** la solicitud: su respuesta no cambia el estado. La
+  incidencia sigue en «Información solicitada» con el aviso «Respuesta nueva» hasta que el
+  supervisor la pasa a «En verificación».
+- Si la respuesta no es suficiente, desde «En verificación» se puede **volver a solicitar
+  información** todas las veces que haga falta; cada pedido crea una nueva `SolicitudInformacion`.
+- Desde «En revisión» se puede ir directo a «En verificación» (verificar en campo sin pedir
+  información) o a «Derivada» (irregularidad grave ya confirmada en la revisión documental).
+- «Resuelta» solo se emite desde «En verificación» (hay que comprobar que el problema se corrigió).
+
+En `Supervisor/Revisar` la lista de estados solo muestra los pasos válidos para la incidencia y el
+pedido de información tiene su propio formulario («Solicitar información al Personal Municipal»).
+Aunque alguien envíe un POST manipulado, `IncidenciaEstadoContext` y las estrategias lo rechazan con
+un mensaje en español.
+
+---|---|---|
+| Pendiente de revisión | En revisión | — (es el estado inicial al registrar el reporte) |
+| En revisión | Información solicitada · En verificación · Derivada | — |
+| Información solicitada | Derivada | Cuando el Personal Municipal responde → **En verificación** |
+| En verificación | Información solicitada (pedir más datos) · Resuelta · Derivada | — |
+| **Resuelta** | Cerrada — sin cambios | — |
+| **Derivada** | Cerrada — sin cambios | — |
+
+- Ninguna incidencia vuelve a «Pendiente de revisión» ni a «En revisión».
+- Si la respuesta del municipio no es suficiente, desde «En verificación» se puede **volver a
+  solicitar información** todas las veces que haga falta; cada pedido crea una nueva
+  `SolicitudInformacion` y, al responderse, la incidencia regresa a «En verificación».
+- «Resuelta» solo se emite desde «En verificación» (hay que comprobar que el problema se corrigió).
+- «Derivada» también se permite desde «En revisión» o mientras se espera la respuesta, porque una
+  irregularidad grave confirmada en la revisión documental no necesita verificación en campo.
+
+En `Supervisor/Revisar` la lista de estados se construye con `IncidenciaEstados.TransicionesPermitidas(...)`
+y el pedido de información tiene su propio formulario («Solicitar información al Personal Municipal»).
+Aunque alguien envíe un POST manipulado, `IncidenciaEstadoContext` y las estrategias lo rechazan con
+un mensaje en español.
+
+---|---|
 | Pendiente de revisión | En revisión · Información solicitada · En verificación · Resuelta · Derivada |
 | En revisión | Pendiente de revisión · Información solicitada · En verificación · Resuelta · Derivada |
 | Información solicitada | En revisión · En verificación · Resuelta · Derivada |
@@ -365,6 +417,7 @@ crea las seis tablas con sus claves foráneas, índices únicos y restricciones:
 | `Evidencias.IncidenciaId` → `Incidencias.Id` | `CASCADE` |
 | `ObservacionesIncidencia.IncidenciaId` → `Incidencias.Id` | `CASCADE` |
 | `ObraArchivos.ObraId` → `Obras.Id` | `CASCADE` |
+| `SolicitudesInformacion.IncidenciaId` → `Incidencias.Id` | `CASCADE` |
 
 Índices únicos: `Obras.Cui` y `Incidencias.CodigoSeguimiento`.
 
@@ -378,6 +431,7 @@ Base: **`VigiaTrujilloDb`** en SQL Server Express.
 | `ObservacionesIncidencia` | `Id` | FK `IncidenciaId` **CASCADE** |
 | `ObraArchivos` | `Id` | FK `ObraId` **CASCADE** |
 | `Usuarios` | `Id` | Índice único `NombreUsuario` |
+| `SolicitudesInformacion` | `Id` | FK `IncidenciaId` **CASCADE**; índices `IncidenciaId` y `Estado` (migración `AgregarSolicitudesInformacion`) |
 
 ### Baja lógica: nada se elimina
 
@@ -406,25 +460,62 @@ base de datos, junto con sus incidencias y evidencias, para eventuales auditorí
 
 **Datos iniciales**
 
-- **3 usuarios** de prueba: `personal.municipal`, `supervisor` y `admin`.
-- **11 obras** cargadas desde `ObrasTrujillo.xlsx`. El componente, el tramo de intervención, el CUI
-  y el plazo declarado provienen de ese archivo. El presupuesto y el avance físico tienen dos
-  orígenes: el dato oficial del MEF cuando el CUI coincide con un proyecto verificable, o un valor
-  simulado para la demostración cuando el archivo fuente no lo consigna. El campo `Fuente` de cada
-  obra declara cuál de los dos casos aplica.
-- **8 incidencias** repartidas en los seis estados de la máquina (2 pendientes de revisión,
-  2 en revisión, 1 con información solicitada, 1 en verificación, 1 resuelta y 1 derivada), con
-  **11 evidencias** y **11 observaciones** que reconstruyen el historial de revisión.
+Los datos iniciales se cargan desde `Data/DbInitializer.cs` cada vez que la aplicación arranca
+con la base de datos vacía (si ya hay obras o incidencias, no se vuelven a cargar). Las fotos y
+documentos (actas, cronogramas e informes de la Municipalidad Distrital de Trujillo) están en
+`Data/SeedArchivos/` y se copian a `wwwroot/uploads/` al cargar los datos, por eso después de un
+reinicio todas las imágenes vuelven a aparecer.
 
-### Reiniciar la base de datos
+- **3 usuarios**: `personal.municipal`, `supervisor` y `admin` (el ciudadano no tiene cuenta).
+- **12 obras**: 11 activas (1 programada, 5 en ejecución, 2 paralizadas con motivo, 2 concluidas
+  y 1 con sobrecosto) y 1 dada de baja para la vista *Obras dadas de baja*. Cada obra tiene CUI,
+  tramo, contratista, monto, plazo y fechas. El campo `Fuente` indica de dónde sale la cifra:
+  la Consulta Amigable del MEF o el informe de avance de la Gerencia de Obras Públicas.
+- **17 archivos de obra** (fotos y actas en PDF).
+- **12 incidencias** en los seis estados (4 pendientes de revisión, 1 en revisión, 3 con
+  información solicitada, 1 en verificación, 2 resueltas y 1 derivada), con **13 evidencias**,
+  **26 observaciones** y **6 solicitudes de información** (2 pendientes, 3 respondidas con archivo
+  adjunto —una todavía marcada como «Respuesta nueva»— y 1 cerrada sin respuesta). Todos los
+  historiales siguen el flujo de estados (solo avanzan).
 
-```bash
+| Código | Obra | Estado | Qué se puede revisar |
+|---|---|---|---|
+| INC-2026-819601 | Av. Manuel Vera Enríquez | Pendiente de revisión | Revisar un caso nuevo con foto |
+| INC-2026-819602 | Jr. San Martín / Jr. Independencia | Pendiente de revisión | Caso nuevo con foto |
+| INC-2026-819603 | Urb. Ingeniería I (paralizada) | Pendiente de revisión | Caso nuevo con foto |
+| INC-2026-819604 | Av. Federico Villarreal | Información solicitada | Respuesta del municipio sin ver («Respuesta nueva») con foto adjunta; el supervisor la puede pasar a «En verificación» |
+| INC-2026-819605 | Av. Víctor Larco | Información solicitada | Solicitud pendiente para el personal municipal |
+| INC-2026-819606 | Av. Costa Rica (paralizada) | Información solicitada | Solicitud pendiente para el personal municipal |
+| INC-2026-819607 | Av. Perú (con sobrecosto) | En verificación | Respuesta con informe técnico en PDF adjunto |
+| INC-2026-819608 | Av. América Sur | Resuelta | Caso cerrado con respuesta y foto |
+| INC-2026-819609 | Av. Víctor Larco | Derivada | Caso derivado; evidencia en PDF; solicitud cerrada sin respuesta |
+| INC-2026-819610 | Pasaje San Agustín | Resuelta | Caso verificado en campo sin pedir información; sin evidencias |
+| INC-2026-819611 | Av. Federico Villarreal | En revisión | Caso con observaciones y sin evidencias |
+| INC-2026-819612 | Pueblo Joven El Bosque | Pendiente de revisión | Caso nuevo sin evidencias |
+
+### Reiniciar datos iniciales
+
+Desde la carpeta del proyecto (PowerShell), con la aplicación detenida:
+
+```powershell
+# 1. Borrar la base de datos
 dotnet ef database drop --force
+
+# 2. (Opcional) Borrar los archivos subidos desde la aplicación.
+#    Ojo: también borra lo que se haya subido a mano desde la aplicación.
+Remove-Item -Recurse -Force wwwroot\uploads\incidencias, wwwroot\uploads\obras, wwwroot\uploads\respuestas-solicitud -ErrorAction SilentlyContinue
+
+# 3. Arrancar: se aplican las migraciones y se cargan los datos iniciales con sus imágenes
 dotnet run
 ```
 
-Al eliminar la base, el siguiente arranque la reconstruye aplicando las migraciones desde cero y
-vuelve a cargar los datos iniciales.
+En la consola debe aparecer algo como:
+`12 obras y 17 archivos de obra cargados.` y
+`12 incidencias, 13 evidencias, 26 observaciones y 6 solicitudes de información cargadas.`
+
+> Al abrir una incidencia en la pantalla *Revisar*, el supervisor marca como vista la respuesta
+> del municipio. Si se quiere volver a mostrar la «Respuesta nueva» de INC-2026-819604, basta con
+> reiniciar los datos.
 
 ### Agregar una migración tras modificar el modelo
 
@@ -509,12 +600,9 @@ obtienen de las obras registradas. Una lista fija producía resultados vacíos c
 con los datos reales.
 
 **Los datos declaran su origen.** Cada obra registra en el campo `Fuente` de dónde salen sus
-cifras, y esa separación se mantiene en la base de datos. La identidad de la obra —nombre, tramo
-de intervención, CUI y plazo declarado— proviene de `ObrasTrujillo.xlsx`. El presupuesto y el
-avance físico tienen dos orígenes posibles: el dato oficial del MEF, cuando el CUI coincide con
-un proyecto verificable, o un valor simulado para la demostración cuando el archivo fuente no lo
-consigna. Un CUI real nunca se asocia a un monto inventado: o la cifra viene verificada de la
-fuente oficial, o se declara como simulación.
+cifras: la Consulta Amigable del MEF o el informe de avance de la Gerencia de Obras Públicas de la
+Municipalidad Distrital de Trujillo. Así el supervisor sabe qué documento respalda cada monto y
+cada porcentaje de avance.
 
 **Estilos por tokens CSS.** Toda la interfaz se apoya en variables definidas en `:root`
 (`--vt-surface`, `--vt-ink`, `--vt-muted`, `--vt-border`, `--vt-primary` y sus derivados). El tema

@@ -32,6 +32,7 @@ public class Incidencia
 
     public ICollection<Evidencia> Evidencias { get; set; } = new List<Evidencia>();
     public ICollection<ObservacionIncidencia> Observaciones { get; set; } = new List<ObservacionIncidencia>();
+    public ICollection<SolicitudInformacion> Solicitudes { get; set; } = new List<SolicitudInformacion>();
 
     public static readonly string[] EstadosDisponibles = IncidenciaEstados.Todos;
 }

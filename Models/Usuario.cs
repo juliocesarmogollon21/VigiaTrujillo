@@ -18,6 +18,20 @@ public class Usuario
     [Display(Name = "Activo")]
     public bool Activo { get; set; } = true;
 
+    // Roles que tienen cuenta en el sistema. El ciudadano no tiene cuenta: usa el portal público
+    // (obras, reportar y consultar con su código) de forma anónima.
     public static readonly string[] RolesDisponibles =
-        { "Ciudadano", "PersonalMunicipal", "Supervisor", "Administrador" };
+        { "PersonalMunicipal", "Supervisor", "Administrador" };
+
+    public static bool EsRolValido(string? rol) =>
+        !string.IsNullOrWhiteSpace(rol) && RolesDisponibles.Contains(rol);
+
+    // Nombre del rol para mostrarlo en pantalla.
+    public static string NombreRol(string? rol) => rol switch
+    {
+        "PersonalMunicipal" => "Personal Municipal",
+        "Supervisor" => "Supervisor de Transparencia",
+        "Administrador" => "Administrador",
+        _ => rol ?? string.Empty
+    };
 }

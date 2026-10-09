@@ -2,6 +2,10 @@
 @{
     ViewData["Title"] = "Editar Obra";
     bool esConcluida = Model.Estado == "Concluida";
+    var estadoOriginal = (ViewBag.EstadoOriginal as string) ?? Model.Estado;
+    var avanceOriginal = (ViewBag.AvanceOriginal as decimal?) ?? Model.AvanceFisico;
+    bool errorMotivoEstado = ViewData.ModelState["MotivoCambioEstado"]?.Errors.Count > 0;
+    bool errorMotivoAvance = ViewData.ModelState["MotivoCambioAvance"]?.Errors.Count > 0;
 }
 
 <div class="row justify-content-center">
@@ -32,30 +36,30 @@
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger small"></div>
                     <input type="hidden" asp-for="Id" />
 
-                    <input type="hidden" id="estadoOriginal" value="@Model.Estado" />
-                    <input type="hidden" id="avanceOriginal" value="@Model.AvanceFisico" />
+                    <input type="hidden" id="estadoOriginal" value="@estadoOriginal" />
+                    <input type="hidden" id="avanceOriginal" value="@(avanceOriginal?.ToString(System.Globalization.CultureInfo.InvariantCulture))" />
 
                     <h2 class="h6 mb-3 pb-2 border-bottom">Información general</h2>
                     <div class="row g-3 mb-4">
                         <div class="col-md-8">
                             <label asp-for="Nombre" class="form-label">Nombre / Componente <span class="text-danger">*</span></label>
-                            <input asp-for="Nombre" class="form-control" @@(esConcluida ? "disabled" : "") />
+                            <input asp-for="Nombre" class="form-control" />
                             <span asp-validation-for="Nombre" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4">
                             <label asp-for="Cui" class="form-label">CUI <span class="text-danger">*</span></label>
-                            <input asp-for="Cui" class="form-control" @@(esConcluida ? "disabled" : "") />
+                            <input asp-for="Cui" class="form-control" />
                             <div class="form-text">Código Único de Inversión (debe ser único).</div>
                             <span asp-validation-for="Cui" class="text-danger small"></span>
                         </div>
                         <div class="col-12">
                             <label asp-for="Ubicacion" class="form-label">Ubicación <span class="text-danger">*</span></label>
-                            <input asp-for="Ubicacion" class="form-control" @@(esConcluida ? "disabled" : "") />
+                            <input asp-for="Ubicacion" class="form-control" />
                             <span asp-validation-for="Ubicacion" class="text-danger small"></span>
                         </div>
                         <div class="col-12">
                             <label asp-for="Contratista" class="form-label">Contratista</label>
-                            <input asp-for="Contratista" class="form-control" @@(esConcluida ? "disabled" : "") />
+                            <input asp-for="Contratista" class="form-control" />
                             <span asp-validation-for="Contratista" class="text-danger small"></span>
                         </div>
                     </div>
@@ -64,12 +68,12 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label asp-for="FechaInicio" class="form-label">Fecha de inicio <span class="text-danger">*</span></label>
-                            <input asp-for="FechaInicio" class="form-control" type="date" @@(esConcluida ? "disabled" : "") />
+                            <input asp-for="FechaInicio" class="form-control" type="date" />
                             <span asp-validation-for="FechaInicio" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="FechaFin" class="form-label">Fecha de fin <span class="text-danger">*</span></label>
-                            <input asp-for="FechaFin" class="form-control" type="date" @@(esConcluida ? "disabled" : "") />
+                            <input asp-for="FechaFin" class="form-control" type="date" />
                             <div class="form-text">Debe ser igual o posterior a la fecha de inicio.</div>
                             <span asp-validation-for="FechaFin" class="text-danger small"></span>
                         </div>
@@ -79,14 +83,14 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
                             <label asp-for="Estado" class="form-label">Estado actual <span class="text-danger">*</span></label>
-                            <select asp-for="Estado" class="form-select" asp-items="Model.Estados" id="selectEstado" @@(esConcluida ? "disabled" : "")></select>
+                            <select asp-for="Estado" class="form-select" asp-items="Model.Estados" id="selectEstado"></select>
                             <span asp-validation-for="Estado" class="text-danger small"></span>
                         </div>
                         <div class="col-md-4">
                             <label asp-for="Presupuesto" class="form-label">Presupuesto (S/) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">S/</span>
-                                <input asp-for="Presupuesto" class="form-control" type="number" min="1" step="0.01" inputmode="decimal" @@(esConcluida ? "disabled" : "") />
+                                <input asp-for="Presupuesto" class="form-control" type="number" min="1" step="0.01" inputmode="decimal" />
                             </div>
                             <div class="form-text">Monto adjudicado oficial.</div>
                             <span asp-validation-for="Presupuesto" class="text-danger small"></span>
@@ -94,7 +98,7 @@
                         <div class="col-md-4">
                             <label asp-for="AvanceFisico" class="form-label">Avance físico (%)</label>
                             <div class="input-group">
-                                <input asp-for="AvanceFisico" class="form-control" type="number" min="0" max="100" step="0.01" inputmode="decimal" id="inputAvance" @@(esConcluida ? "disabled" : "") />
+                                <input asp-for="AvanceFisico" class="form-control" type="number" min="0" max="100" step="0.01" inputmode="decimal" id="inputAvance" />
                                 <span class="input-group-text">%</span>
                             </div>
                             <div class="form-text">Porcentaje de ejecución verificado.</div>
@@ -104,23 +108,25 @@
 
                     @if (!esConcluida)
                     {
-                        <div id="seccionJustificacion" class="mb-4" style="display: none;">
+                        <div id="seccionJustificacion" class="mb-4" style="@(errorMotivoEstado || errorMotivoAvance ? "" : "display: none;")">
                             <h2 class="h6 mb-3 pb-2 border-bottom">Justificación de cambios críticos</h2>
                             <div class="alert alert-warning mb-3">
                                 Ha modificado campos críticos que requieren justificación para mantener la trazabilidad del sistema.
                             </div>
 
-                            <div id="campoJustificacionEstado" class="mb-3" style="display: none;">
+                            <div id="campoJustificacionEstado" class="mb-3" style="@(errorMotivoEstado ? "" : "display: none;")">
                                 <label for="motivoCambioEstado" class="form-label">Motivo del cambio de estado <span class="text-danger">*</span></label>
                                 <textarea id="motivoCambioEstado" name="MotivoCambioEstado" class="form-control" rows="3"
-                                          placeholder="Ejemplo: Se cambia a 'Paralizada' debido a retrasos en la entrega de materiales..."></textarea>
+                                          placeholder="Se cambia a 'Paralizada' debido a retrasos en la entrega de materiales...">@Model.MotivoCambioEstado</textarea>
+                                <span asp-validation-for="MotivoCambioEstado" class="text-danger small"></span>
                                 <div class="form-text">Explique por qué se está cambiando el estado de la obra.</div>
                             </div>
 
-                            <div id="campoJustificacionAvance" class="mb-3" style="display: none;">
+                            <div id="campoJustificacionAvance" class="mb-3" style="@(errorMotivoAvance ? "" : "display: none;")">
                                 <label for="motivoCambioAvance" class="form-label">Justificación del cambio de avance <span class="text-danger">*</span></label>
                                 <textarea id="motivoCambioAvance" name="MotivoCambioAvance" class="form-control" rows="3"
-                                          placeholder="Ejemplo: El avance se actualiza al 65% tras la verificación en sitio..."></textarea>
+                                          placeholder="El avance se actualiza al 65% tras la verificación en sitio...">@Model.MotivoCambioAvance</textarea>
+                                <span asp-validation-for="MotivoCambioAvance" class="text-danger small"></span>
                                 <div class="form-text">Explique por qué se está modificando el porcentaje de avance.</div>
                             </div>
                         </div>
@@ -130,12 +136,12 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label asp-for="Zona" class="form-label">Zona</label>
-                            <input asp-for="Zona" class="form-control" @@(esConcluida ? "disabled" : "") />
+                            <input asp-for="Zona" class="form-control" />
                             <span asp-validation-for="Zona" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
                             <label asp-for="Categoria" class="form-label">Categoría</label>
-                            <input asp-for="Categoria" class="form-control" @@(esConcluida ? "disabled" : "") />
+                            <input asp-for="Categoria" class="form-control" />
                             <span asp-validation-for="Categoria" class="text-danger small"></span>
                         </div>
                     </div>

@@ -42,7 +42,7 @@ public class SupervisorController : Controller
         ViewBag.ObraId = obraId;
         ViewBag.Desde = desde?.ToString("yyyy-MM-dd");
         ViewBag.Hasta = hasta?.ToString("yyyy-MM-dd");
-        ViewBag.Estados = Incidencia.EstadosDisponibles.Select(e => new SelectListItem(e, e, e == estado));
+        ViewBag.Estados = Incidencia.EstadosDisponibles.Select(e => new SelectListItem(e, e, IncidenciaEstados.EsIgual(e, estado)));
         ViewBag.Obras = _obras.GetAll().Select(o => new SelectListItem(o.Nombre, o.Id.ToString(), obraId == o.Id));
         return View(lista);
     }
@@ -57,15 +57,29 @@ public class SupervisorController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var permitidos = _incidencias.ObtenerEstadosPermitidos(incidencia.Estado);
+        var permitidos = _incidencias.ObtenerEstadosPermitidos(incidencia);
         ViewBag.EstadosPermitidos = permitidos;
+        ViewBag.RespuestaRecibida = VigiaTrujillo.Strategies.EnVerificacionStrategy.RespuestaRecibida(incidencia);
         ViewBag.IncidenciaCerrada = IncidenciaEstados.EsCerrada(incidencia.Estado);
+
+        // Las respuestas nuevas del Personal Municipal se resaltan solo la primera vez que se abren.
+        ViewBag.RespuestasNuevas = incidencia.Solicitudes
+            .Where(s => s.Estado == SolicitudInformacion.EstadoRespondida && !s.RespuestaVista)
+            .Select(s => s.Id)
+            .ToList();
+        _incidencias.MarcarRespuestasVistas(id);
+
+        // Fotos y documentos de la obra para compararlos con las evidencias del ciudadano.
+        var archivosObra = _obras.GetByIdWithArchivos(incidencia.ObraId)?.Archivos
+            .OrderByDescending(a => a.FechaCarga)
+            .ToList() ?? new List<ObraArchivo>();
 
         return View(new SupervisorRevisarViewModel
         {
             Incidencia = incidencia,
             NuevoEstado = incidencia.Estado,
-            ResultadoRevision = incidencia.ResultadoRevision
+            ResultadoRevision = incidencia.ResultadoRevision,
+            ArchivosObra = archivosObra
         });
     }
 
@@ -100,6 +114,9 @@ public class SupervisorController : Controller
             TempData["Error"] = "Debe seleccionar un estado destino.";
             return RedirectToAction(nameof(Revisar), new { id });
         }
+
+        if (IncidenciaEstados.EsIgual(nuevoEstado, IncidenciaEstados.InformacionSolicitada))
+            return await SolicitarInformacion(id, resultadoRevision);
 
         var autor = User.Identity?.Name ?? "Supervisor";
         var error = _incidencias.CambiarEstado(id, nuevoEstado, resultadoRevision, autor);
@@ -146,32 +163,26 @@ public class SupervisorController : Controller
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> SolicitarInformacion(int id, string? nota)
     {
-        if (string.IsNullOrWhiteSpace(nota))
+        var autor = User.Identity?.Name ?? "Supervisor";
+        var error = _incidencias.SolicitarInformacion(id, nota, autor);
+        if (error != null)
         {
-            TempData["Error"] = "Debe especificar qué documentación o información se requiere.";
+            TempData["Error"] = error;
             return RedirectToAction(nameof(Revisar), new { id });
         }
 
-        var obsError = _incidencias.AgregarObservacion(id, $"[Solicitud de información] {nota.Trim()}", User.Identity?.Name ?? "Supervisor");
-        if (obsError != null)
+        await NotificarSeguro(async () =>
         {
-            TempData["Error"] = obsError;
-            return RedirectToAction(nameof(Revisar), new { id });
-        }
+            var inc = _incidencias.GetByIdWithDetalle(id);
+            await _hub.Clients.Group(VigiaHub.GrupoTablero).SendAsync(
+                "IncidenciaActualizada",
+                new { id, codigo = inc?.CodigoSeguimiento, estado = IncidenciaEstados.InformacionSolicitada, obraNombre = inc?.Obra?.Nombre, mensaje = "Se solicitó información adicional" });
+            await _hub.Clients.Group(VigiaHub.GrupoMunicipal).SendAsync(
+                "NuevaSolicitudInformacion",
+                new { id, codigo = inc?.CodigoSeguimiento, obraNombre = inc?.Obra?.Nombre, mensaje = "El Supervisor solicitó información sobre una incidencia" });
+        });
 
-        var error = _incidencias.CambiarEstado(id, IncidenciaEstados.InformacionSolicitada);
-        if (error == null)
-        {
-            await NotificarSeguro(async () =>
-            {
-                var inc = _incidencias.GetByIdWithDetalle(id);
-                await _hub.Clients.Group(VigiaHub.GrupoTablero).SendAsync(
-                    "IncidenciaActualizada",
-                    new { id, codigo = inc?.CodigoSeguimiento, estado = IncidenciaEstados.InformacionSolicitada, obraNombre = inc?.Obra?.Nombre, mensaje = "Se solicitó información adicional" });
-            });
-        }
-
-        TempData[error == null ? "Success" : "Error"] = error ?? "Se solicitó información adicional al Personal Municipal.";
+        TempData["Success"] = "Se envió la solicitud de información al Personal Municipal. La incidencia quedó en «Información solicitada».";
         return RedirectToAction(nameof(Revisar), new { id });
     }
 

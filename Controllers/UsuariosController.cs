@@ -24,6 +24,7 @@ public class UsuariosController : Controller
     public IActionResult Create(UsuarioFormViewModel vm)
     {
         vm.Roles = BuildRoles(vm.Rol);
+        ValidarRol(vm);
         if (!ModelState.IsValid) return View(vm);
         if (_repo.GetByNombre(vm.NombreUsuario.Trim()) != null)
         {
@@ -72,6 +73,7 @@ public class UsuariosController : Controller
             return RedirectToAction(nameof(Index));
         }
         vm.Roles = BuildRoles(vm.Rol);
+        ValidarRol(vm);
         if (!ModelState.IsValid) return View(vm);
 
         var existing = _repo.GetById(id);
@@ -127,6 +129,18 @@ public class UsuariosController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    // Solo se asignan roles con cuenta en el sistema. Se valida también en el servidor
+    // por si alguien envía el formulario modificado.
+    private void ValidarRol(UsuarioFormViewModel vm)
+    {
+        if (Usuario.EsRolValido(vm.Rol)) return;
+
+        var mensaje = string.Equals(vm.Rol?.Trim(), "Ciudadano", StringComparison.OrdinalIgnoreCase)
+            ? "El ciudadano no tiene cuenta en el sistema: reporta y consulta sus incidencias de forma anónima desde el portal público. Elija Personal Municipal, Supervisor de Transparencia o Administrador."
+            : "Seleccione un rol válido: Personal Municipal, Supervisor de Transparencia o Administrador.";
+        ModelState.AddModelError(nameof(vm.Rol), mensaje);
+    }
+
     private static IEnumerable<SelectListItem> BuildRoles(string? selected = null) =>
-        Usuario.RolesDisponibles.Select(r => new SelectListItem(r, r, r == selected));
+        Usuario.RolesDisponibles.Select(r => new SelectListItem(Usuario.NombreRol(r), r, r == selected));
 }

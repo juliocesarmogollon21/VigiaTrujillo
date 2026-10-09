@@ -46,19 +46,31 @@ public static class IncidenciaEstados
 
     public static bool EsValido(string? estado) => Canonico(estado) != null;
 
+    // Matriz de transiciones de la incidencia. Solo el supervisor cambia el estado y el flujo solo avanza:
+    //   Pendiente de revisión -> En revisión -> Información solicitada -> En verificación -> Resuelta / Derivada
+    // - "Pendiente de revisión" es solo el estado inicial (cuando el ciudadano registra el reporte).
+    // - El Personal Municipal solo responde la solicitud; su respuesta no cambia el estado.
+    //   La incidencia sigue en "Información solicitada" (con el aviso «Respuesta nueva») hasta que el
+    //   supervisor la pasa a "En verificación". Ese paso solo se permite cuando la solicitud ya tiene respuesta.
+    // - Desde "En verificación" el supervisor puede volver a pedir información todas las veces que necesite;
+    //   cada pedido crea una nueva SolicitudInformacion.
+    // - Desde "En revisión" se puede pasar directo a "En verificación" (verificar en campo sin pedir
+    //   información) o a "Derivada" (irregularidad grave ya confirmada con la revisión documental).
+    // - "Resuelta" solo se emite desde "En verificación": hay que comprobar que el problema se corrigió.
+    // - "Resuelta" y "Derivada" cierran el caso y ya no permiten cambios.
     public static IReadOnlyList<string> TransicionesPermitidas(string? estadoActual)
     {
         var actual = Canonico(estadoActual);
-        if (actual == null) return Todos.Where(t => !EsCerrada(t)).ToList();
+        if (actual == null) return new[] { EnRevision };
 
         return actual switch
         {
-            PendienteDeRevision => new[] { EnRevision, InformacionSolicitada, EnVerificacion, Resuelta, Derivada },
+            PendienteDeRevision => new[] { EnRevision },
 
-            EnRevision => new[] { InformacionSolicitada, EnVerificacion, Resuelta, Derivada },
-            
-            InformacionSolicitada => new[] { EnVerificacion, Resuelta, Derivada },
-            
+            EnRevision => new[] { InformacionSolicitada, EnVerificacion, Derivada },
+
+            InformacionSolicitada => new[] { EnVerificacion, Derivada },
+
             EnVerificacion => new[] { InformacionSolicitada, Resuelta, Derivada },
 
             _ => Array.Empty<string>()

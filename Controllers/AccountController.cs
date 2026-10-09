@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using VigiaTrujillo.Models;
 using VigiaTrujillo.Repositories;
 using VigiaTrujillo.Utils;
 using VigiaTrujillo.ViewModels;
@@ -26,7 +27,10 @@ public class AccountController : Controller
         if (!ModelState.IsValid) return View(vm);
 
         var usuario = _usuarios.GetByNombre(vm.Usuario);
-        if (usuario == null || !usuario.Activo || !PasswordHelper.Verify(vm.Contrasena, usuario.PasswordHash))
+        // Solo inician sesión el Personal Municipal, el Supervisor y el Administrador.
+        // El ciudadano no tiene cuenta: usa el portal público sin iniciar sesión.
+        if (usuario == null || !usuario.Activo || !Usuario.EsRolValido(usuario.Rol)
+            || !PasswordHelper.Verify(vm.Contrasena, usuario.PasswordHash))
         {
             ModelState.AddModelError(string.Empty, "Usuario o contraseña incorrectos.");
             return View(vm);
@@ -54,7 +58,6 @@ public class AccountController : Controller
         "PersonalMunicipal" => RedirectToAction("Dashboard", "Obras"),
         "Supervisor" => RedirectToAction("Index", "Supervisor"),
         "Administrador" => RedirectToAction("Index", "Usuarios"),
-        "Ciudadano" => RedirectToAction("Publico", "Obras"),
         _ => RedirectToAction("Index", "Home")
     };
 

@@ -25,17 +25,18 @@ public class IncidenciaRepository : IIncidenciaRepository
     public Incidencia? GetById(int id) => _db.Incidencias.AsNoTracking().FirstOrDefault(i => i.Id == id);
 
     public Incidencia? GetByIdWithDetalle(int id) =>
-        _db.Incidencias
+        _db.Incidencias.AsSplitQuery()
             .Include(i => i.Obra)
             .Include(i => i.Evidencias)
             .Include(i => i.Observaciones)
+            .Include(i => i.Solicitudes)
             .FirstOrDefault(i => i.Id == id);
 
     public Incidencia? GetByCodigoSeguimiento(string codigo)
     {
         if (string.IsNullOrWhiteSpace(codigo)) return null;
         var t = codigo.Trim().ToUpperInvariant();
-        return _db.Incidencias.AsNoTracking()
+        return _db.Incidencias.AsNoTracking().AsSplitQuery()
             .Include(i => i.Obra)
             .Include(i => i.Evidencias)
             .Include(i => i.Observaciones)
@@ -47,19 +48,27 @@ public class IncidenciaRepository : IIncidenciaRepository
             .Where(i => i.ObraId == obraId)
             .OrderByDescending(i => i.FechaRegistro)
             .ToList();
+
     public IReadOnlyList<Incidencia> Filtrar(string? estado = null, int? obraId = null, DateTime? desde = null, DateTime? hasta = null)
     {
-        IQueryable<Incidencia> q = _db.Incidencias.AsNoTracking()
+        IQueryable<Incidencia> q = _db.Incidencias.AsNoTracking().AsSplitQuery()
             .Include(i => i.Obra)
             .Include(i => i.Evidencias)
-            .Include(i => i.Observaciones); // <--- ESTA ES LA LÍNEA CLAVE
+            .Include(i => i.Observaciones)
+            .Include(i => i.Solicitudes);
 
-        if (!string.IsNullOrWhiteSpace(estado)) q = q.Where(i => i.Estado == estado);
         if (obraId.HasValue) q = q.Where(i => i.ObraId == obraId.Value);
         if (desde.HasValue) q = q.Where(i => i.FechaRegistro >= desde.Value.Date);
         if (hasta.HasValue) q = q.Where(i => i.FechaRegistro < hasta.Value.Date.AddDays(1));
         
-        return q.OrderByDescending(i => i.FechaRegistro).ToList();
+        var lista = q.OrderByDescending(i => i.FechaRegistro).ToList();
+
+        if (!string.IsNullOrWhiteSpace(estado))
+        {
+            lista = lista.Where(i => IncidenciaEstados.EsIgual(i.Estado, estado)).ToList();
+        }
+
+        return lista;
     }
 
     public void RegistrarEvidencia(int incidenciaId, string rutaArchivo, string nombreArchivo)

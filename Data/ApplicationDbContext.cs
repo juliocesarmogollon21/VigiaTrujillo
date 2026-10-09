@@ -13,6 +13,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<ObservacionIncidencia> ObservacionesIncidencia => Set<ObservacionIncidencia>();
     public DbSet<ObraArchivo> ObraArchivos => Set<ObraArchivo>();
+    public DbSet<SolicitudInformacion> SolicitudesInformacion => Set<SolicitudInformacion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -42,6 +43,14 @@ public class ApplicationDbContext : DbContext
             e.ToTable("ObservacionesIncidencia");
             e.HasOne(o => o.Incidencia).WithMany(i => i.Observaciones)
                 .HasForeignKey(o => o.IncidenciaId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SolicitudInformacion>(e =>
+        {
+            e.ToTable("SolicitudesInformacion");
+            e.HasOne(s => s.Incidencia).WithMany(i => i.Solicitudes)
+                .HasForeignKey(s => s.IncidenciaId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(s => s.Estado);
         });
 
         modelBuilder.Entity<ObraArchivo>(e =>

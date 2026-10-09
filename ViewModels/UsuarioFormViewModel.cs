@@ -16,7 +16,7 @@ public class UsuarioFormViewModel
     public string? Contrasena { get; set; }
 
     [Required, Display(Name = "Rol")]
-    public string Rol { get; set; } = "Ciudadano";
+    public string Rol { get; set; } = "PersonalMunicipal";
 
     [Display(Name = "Activo")]
     public bool Activo { get; set; } = true;

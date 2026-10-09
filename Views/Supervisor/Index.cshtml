@@ -1,15 +1,17 @@
 @model IReadOnlyList<VigiaTrujillo.Models.Incidencia>
+@using VigiaTrujillo.Models
 @{
     ViewData["Title"] = "Bandeja de Supervisión";
     var estados = (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Estados;
     var obras = (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Obras;
 
     int total = Model.Count;
-    int pendientes = Model.Count(i => i.Estado == "Pendiente de revisión");
-    int enRevision = Model.Count(i => i.Estado == "En revisión");
-    int infoSolicitada = Model.Count(i => i.Estado == "Información solicitada");
-    int enVerificacion = Model.Count(i => i.Estado == "En verificación");
-    int cerradas = Model.Count(i => i.Estado == "Resuelta" || i.Estado == "Derivada");
+    int pendientes = Model.Count(i => IncidenciaEstados.EsIgual(i.Estado, IncidenciaEstados.PendienteDeRevision));
+    int enRevision = Model.Count(i => IncidenciaEstados.EsIgual(i.Estado, IncidenciaEstados.EnRevision));
+    int infoSolicitada = Model.Count(i => IncidenciaEstados.EsIgual(i.Estado, IncidenciaEstados.InformacionSolicitada));
+    int enVerificacion = Model.Count(i => IncidenciaEstados.EsIgual(i.Estado, IncidenciaEstados.EnVerificacion));
+    int cerradas = Model.Count(i => IncidenciaEstados.EsCerrada(i.Estado));
+    int conRespuestaNueva = Model.Count(i => i.Solicitudes.Any(s => s.Estado == SolicitudInformacion.EstadoRespondida && !s.RespuestaVista));
     bool hayFiltros = !string.IsNullOrWhiteSpace(ViewBag.Estado) || ViewBag.ObraId != null
                      || ViewBag.Desde != null || ViewBag.Hasta != null;
 }
@@ -22,6 +24,15 @@
         Las nuevas incidencias se incorporan automáticamente.
     </p>
 </div>
+
+@if (conRespuestaNueva > 0)
+{
+    <div class="alert alert-success mb-4" role="alert">
+        <i class="bi bi-envelope-open me-1"></i>
+        El Personal Municipal respondió <strong>@conRespuestaNueva</strong> solicitud(es) de información.
+        Las incidencias aparecen marcadas con «Respuesta nueva».
+    </div>
+}
 
 <div class="row g-3 mb-4">
     <div class="col-6 col-lg-2">
@@ -71,17 +82,25 @@
 <div class="card mb-4">
     <div class="card-header">Filtrar incidencias</div>
     <div class="card-body">
-        <form method="get" class="row g-3 align-items-end">
+        <form method="get" asp-action="Index" class="row g-3 align-items-end">
             <div class="col-md-3">
                 <label class="form-label" for="filtroEstado">Estado</label>
-                <select name="estado" id="filtroEstado" class="form-select" asp-items="estados">
+                <select name="estado" id="filtroEstado" class="form-select">
                     <option value="">— Todos los estados —</option>
+                    @foreach (var estado in estados ?? Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
+                    {
+                        <option value="@estado.Value" selected="@(estado.Selected)">@estado.Text</option>
+                    }
                 </select>
             </div>
             <div class="col-md-3">
                 <label class="form-label" for="filtroObra">Obra</label>
-                <select name="obraId" id="filtroObra" class="form-select" asp-items="obras">
+                <select name="obraId" id="filtroObra" class="form-select">
                     <option value="">— Todas las obras —</option>
+                    @foreach (var obra in obras ?? Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
+                    {
+                        <option value="@obra.Value" selected="@(obra.Selected)">@obra.Text</option>
+                    }
                 </select>
             </div>
             <div class="col-md-2">
@@ -135,7 +154,9 @@
             {
                 foreach (var i in Model)
                 {
-                    var badgeClass = i.Estado switch
+                    var tieneRespuestaNueva = i.Solicitudes.Any(s => s.Estado == SolicitudInformacion.EstadoRespondida && !s.RespuestaVista);
+                    var esperandoRespuesta = i.Solicitudes.Any(s => s.Estado == SolicitudInformacion.EstadoPendiente);
+                    var badgeClass = (IncidenciaEstados.Canonico(i.Estado) ?? i.Estado) switch
                     {
                         "Pendiente de revisión" => "vt-badge-warning",
                         "En revisión" => "vt-badge-info",
@@ -158,6 +179,14 @@
                         </td>
                         <td>
                             <span class="badge @badgeClass">@i.Estado</span>
+                            @if (tieneRespuestaNueva)
+                            {
+                                <span class="badge vt-badge-success d-inline-block mt-1">Respuesta nueva</span>
+                            }
+                            else if (esperandoRespuesta)
+                            {
+                                <span class="badge vt-badge-neutral d-inline-block mt-1">Esperando respuesta</span>
+                            }
                         </td>
                         <td>
                             <div class="vt-figure">@i.FechaRegistro.ToString("dd/MM/yyyy")</div>

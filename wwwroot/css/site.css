@@ -1362,3 +1362,14 @@ min-height: calc(100vh - 60px);
 [data-theme="dark"] a:not(.btn):hover {
     color: #9cc0ea;
 }
+
+/* Enlaces del portal ciudadano en la barra superior (visitante sin sesión) */
+.vt-topbar__publico { gap: 1.25rem; align-items: center; }
+.vt-topbar__publico a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+.vt-topbar__publico a:hover,
+.vt-topbar__publico a:focus { color: #ffffff; text-decoration: underline; }

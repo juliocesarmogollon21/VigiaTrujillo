@@ -12,6 +12,8 @@ public class ObraListItemViewModel
     public decimal? AvanceFisico { get; set; }
     
     public bool TieneSolicitudPendiente { get; set; }
+    public int? SolicitudIdPendiente { get; set; }
+    public int CantidadSolicitudesPendientes { get; set; }
     public int? IncidenciaIdPendiente { get; set; }
     public string? CodigoIncidenciaPendiente { get; set; }
     

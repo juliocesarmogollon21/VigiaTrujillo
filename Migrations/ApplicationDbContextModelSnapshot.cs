@@ -259,6 +259,66 @@ namespace VigiaTrujillo.Migrations
                     b.ToTable("ObservacionesIncidencia", (string)null);
                 });
 
+            modelBuilder.Entity("VigiaTrujillo.Models.SolicitudInformacion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ArchivoNombre")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ArchivoRuta")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("FechaRespuesta")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaSolicitud")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IncidenciaId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Pregunta")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("RespondidoPor")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Respuesta")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("RespuestaVista")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SolicitadoPor")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Estado");
+
+                    b.HasIndex("IncidenciaId");
+
+                    b.ToTable("SolicitudesInformacion", (string)null);
+                });
+
             modelBuilder.Entity("VigiaTrujillo.Models.Usuario", b =>
                 {
                     b.Property<int>("Id")
@@ -336,11 +396,24 @@ namespace VigiaTrujillo.Migrations
                     b.Navigation("Incidencia");
                 });
 
+            modelBuilder.Entity("VigiaTrujillo.Models.SolicitudInformacion", b =>
+                {
+                    b.HasOne("VigiaTrujillo.Models.Incidencia", "Incidencia")
+                        .WithMany("Solicitudes")
+                        .HasForeignKey("IncidenciaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Incidencia");
+                });
+
             modelBuilder.Entity("VigiaTrujillo.Models.Incidencia", b =>
                 {
                     b.Navigation("Evidencias");
 
                     b.Navigation("Observaciones");
+
+                    b.Navigation("Solicitudes");
                 });
 
             modelBuilder.Entity("VigiaTrujillo.Models.Obra", b =>

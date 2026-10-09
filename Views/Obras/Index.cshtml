@@ -156,11 +156,18 @@
                             </td>
                             <td class="text-end">
                                 <div class="d-inline-flex gap-1 flex-wrap justify-content-end">
-                                    @if (item.TieneSolicitudPendiente)
+                                    @if (item.CantidadSolicitudesPendientes > 1)
+                                    {
+                                        <a class="btn btn-sm btn-warning" asp-controller="Solicitudes" asp-action="Index" asp-route-obraId="@item.Id"
+                                           title="Responder solicitudes del supervisor">
+                                            <i class="bi bi-chat-left-text"></i> @item.CantidadSolicitudesPendientes
+                                        </a>
+                                    }
+                                    else if (item.TieneSolicitudPendiente)
                                     {
                                         <button type="button" class="btn btn-sm btn-warning"
                                                 data-bs-toggle="modal" data-bs-target="#modalResponderIndex"
-                                                data-incidencia-id="@item.IncidenciaIdPendiente"
+                                                data-solicitud-id="@item.SolicitudIdPendiente"
                                                 data-obra-id="@item.Id"
                                                 data-codigo="@item.CodigoIncidenciaPendiente"
                                                 data-texto-solicitud="@item.TextoSolicitudPendiente"
@@ -207,25 +214,23 @@
     </a>
 </div>
 
-<!-- ✅ MODAL ACTUALIZADO CON EL TEXTO DE LA SOLICITUD -->
 <div class="modal fade" id="modalResponderIndex" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form asp-action="ResponderSolicitud" method="post" enctype="multipart/form-data">
+            <form asp-controller="Solicitudes" asp-action="Responder" method="post" enctype="multipart/form-data">
                 <div class="modal-header">
                     <h5 class="modal-title">Responder solicitud del Supervisor</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" name="IncidenciaId" id="modalIndexIncidenciaId" />
-                    <input type="hidden" name="ObraId" id="modalIndexObraId" />
+                    <input type="hidden" name="solicitudId" id="modalIndexSolicitudId" />
+                    <input type="hidden" name="origen" value="obras" />
 
                     <div class="mb-3">
                         <label class="form-label">Incidencia</label>
                         <div class="form-control-plaintext fw-semibold vt-code" id="modalIndexCodigoIncidencia"></div>
                     </div>
 
-                    <!-- ✅ NUEVO: Bloque para mostrar qué pidió el supervisor -->
                     <div class="alert alert-info border-0 bg-primary bg-opacity-10 mb-3">
                         <h6 class="alert-heading fw-bold text-primary mb-2">
                             <i class="bi bi-chat-left-quote me-1"></i> Solicitud del Supervisor:
@@ -238,7 +243,7 @@
                             Tu respuesta oficial <span class="text-danger">*</span>
                         </label>
                         <textarea class="form-control" id="respuestaTextoIndex" name="Respuesta" rows="4" required minlength="10"
-                                  placeholder="Ejemplo: Se adjunta el acta de entrega de materiales N° 2026-045 emitida por el almacén central..."></textarea>
+                                  placeholder="Se adjunta el acta de entrega de materiales N° 2026-045 emitida por el almacén central..."></textarea>
                         <div class="form-text">Mínimo 10 caracteres. Esta respuesta quedará registrada en el historial.</div>
                     </div>
 
@@ -269,13 +274,11 @@
             if (modal) {
                 modal.addEventListener('show.bs.modal', function (event) {
                     var button = event.relatedTarget;
-                    var incidenciaId = button.getAttribute('data-incidencia-id');
-                    var obraId = button.getAttribute('data-obra-id');
+                    var solicitudId = button.getAttribute('data-solicitud-id');
                     var codigo = button.getAttribute('data-codigo');
                     var textoSolicitud = button.getAttribute('data-texto-solicitud'); 
 
-                    document.getElementById('modalIndexIncidenciaId').value = incidenciaId;
-                    document.getElementById('modalIndexObraId').value = obraId;
+                    document.getElementById('modalIndexSolicitudId').value = solicitudId;
                     document.getElementById('modalIndexCodigoIncidencia').textContent = "#" + codigo;
                     document.getElementById('modalTextoSolicitud').textContent = textoSolicitud || "No se encontraron detalles de la solicitud.";
                 });

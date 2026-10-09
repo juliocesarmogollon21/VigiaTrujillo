@@ -8,7 +8,6 @@
     int admins = Model.Count(u => u.Rol == "Administrador" && u.Activo);
     int supervisores = Model.Count(u => u.Rol == "Supervisor" && u.Activo);
     int municipales = Model.Count(u => u.Rol == "PersonalMunicipal" && u.Activo);
-    int ciudadanos = Model.Count(u => u.Rol == "Ciudadano" && u.Activo);
 }
 
 <div class="vt-page-header">
@@ -99,7 +98,6 @@
                         "Administrador" => "vt-badge-danger",
                         "Supervisor" => "vt-badge-info",
                         "PersonalMunicipal" => "vt-badge-success",
-                        "Ciudadano" => "vt-badge-neutral",
                         _ => "vt-badge-neutral"
                     };
 
@@ -118,7 +116,7 @@
                             </div>
                         </td>
                         <td>
-                            <span class="badge @rolBadgeClass">@u.Rol</span>
+                            <span class="badge @rolBadgeClass">@Usuario.NombreRol(u.Rol)</span>
                         </td>
                         <td class="text-center">
                             @if (u.Activo)
@@ -181,30 +179,27 @@
     <div class="card-header">Distribución por rol</div>
     <div class="card-body">
         <div class="row g-3">
-            <div class="col-md-3 col-6">
+            <div class="col-md-4">
                 <div class="vt-kpi vt-kpi--danger">
                     <div class="vt-kpi__label">Administradores</div>
                     <div class="vt-kpi__value">@admins</div>
                 </div>
             </div>
-            <div class="col-md-3 col-6">
+            <div class="col-md-4">
                 <div class="vt-kpi vt-kpi--accent">
-                    <div class="vt-kpi__label">Supervisores</div>
+                    <div class="vt-kpi__label">Supervisores de Transparencia</div>
                     <div class="vt-kpi__value">@supervisores</div>
                 </div>
             </div>
-            <div class="col-md-3 col-6">
+            <div class="col-md-4">
                 <div class="vt-kpi vt-kpi--success">
                     <div class="vt-kpi__label">Personal Municipal</div>
                     <div class="vt-kpi__value">@municipales</div>
                 </div>
             </div>
-            <div class="col-md-3 col-6">
-                <div class="vt-kpi">
-                    <div class="vt-kpi__label">Ciudadanos</div>
-                    <div class="vt-kpi__value">@ciudadanos</div>
-                </div>
-            </div>
         </div>
+        <p class="text-muted small mt-3 mb-0">
+            Los ciudadanos no tienen cuenta: reportan y consultan sus incidencias de forma anónima desde el portal público.
+        </p>
     </div>
 </div>
